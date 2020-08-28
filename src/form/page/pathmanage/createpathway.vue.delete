@@ -1,0 +1,371 @@
+<template>
+  <div>
+    <ever-form2
+      :schema="querySchema"
+      v-model="queryObj"
+      :inline="false"
+      labelWidth="100px"
+      :nosubmit="true"
+      :rules="rules"
+      ref="form"
+      class="pathwayform"
+    >
+      <template slot="hospitalDayType">
+        <el-row :gutter="10">
+          <el-col :span="8" style="padding-left:0">
+            <el-select v-model="queryObj.hospitalDayType" clearable>
+              <el-option
+                v-for="(item, index) in typeOptions"
+                :key="index"
+                :value="item.id"
+                :label="item.name"
+              ></el-option>
+            </el-select>
+          </el-col>
+          <el-col :span="5" v-if="queryObj.hospitalDayType === 1">
+            <el-input v-model.number="queryObj.hospitalDayFrom"></el-input>
+          </el-col>
+          <el-col :span="2" v-if="queryObj.hospitalDayType === 1">—</el-col>
+          <el-col :span="5">
+            <el-input v-model.number="queryObj.hospitalDayTo"></el-input>
+          </el-col>
+          <el-col :span="2">天</el-col>
+        </el-row>
+      </template>
+      <template slot="standardFeeFrom">
+        <el-row :gutter="10">
+          <el-col :span="9" style="padding-left:0">
+            <el-input v-model.number="queryObj.standardFeeFrom"></el-input>
+          </el-col>
+          <el-col :span="2">—</el-col>
+          <el-col :span="9">
+            <el-input v-model.number="queryObj.standardFeeTo"></el-input>
+          </el-col>
+          <el-col :span="2">元</el-col>
+        </el-row>
+      </template>
+      <template slot="ageFrom">
+        <el-row :gutter="10">
+          <el-col :span="5" style="padding-left:0">
+            <el-input v-model.number="queryObj.ageFrom"></el-input>
+          </el-col>
+          <el-col :span="2">—</el-col>
+          <el-col :span="5">
+            <el-input v-model.number="queryObj.ageTo"></el-input>
+          </el-col>
+          <el-col :span="2">岁</el-col>
+        </el-row>
+      </template>
+    </ever-form2>
+    <div class="footerarea" style="text-align:right">
+      <el-button type="primary" @click="submitForm" :disabled="disabledHandle">确定</el-button>
+      <el-button @click="cancelForm">取消</el-button>
+    </div>
+  </div>
+</template>
+<script>
+import api from '@/form/store/pathmanage'
+import selectInquireList from '@/warehouse/util/selectinquirelist'
+import packageapi from '@/card/store/packagemanagement/api'
+export default {
+  props: ['id'],
+  data () {
+    let validate = (rule, value, callback) => {
+      if (value.length > 0) {
+        callback()
+      } else {
+        callback(new Error('必填项'))
+      }
+    }
+    let querySchema = [
+      {
+        name: 'pathwayName',
+        label: '路径名称',
+        props: {
+          placeholder: '请输入路径名称'
+        }
+      },
+      {
+        name: 'orgId',
+        label: '适用机构',
+        comp: 'sys-select',
+        props: {
+          options: []
+        }
+      },
+      {
+        name: 'providerList',
+        label: '所属科室',
+        comp: 'sys-select',
+        props: {
+          options: [],
+          field: {
+            multiple: true
+          }
+        }
+      },
+      {
+        name: 'diagnosisList',
+        label: '关联诊断',
+        comp: 'ever-diagnosis',
+        props: {
+          showType: 'simple'
+        }
+      },
+      {
+        name: 'hospitalDayType',
+        label: '标准住院日',
+        comp: 'custom'
+      },
+      {
+        name: 'standardFeeFrom',
+        label: '标准费用',
+        comp: 'custom'
+      },
+      {
+        name: 'sex',
+        label: '性别',
+        comp: 'sys-type',
+        props: {
+          placeholder: '性别',
+          code: 'GBT.2261.1',
+          useValue: true
+        }
+      },
+      {
+        name: 'ageFrom',
+        label: '年龄',
+        comp: 'custom'
+      },
+      {
+        name: 'exclusions',
+        label: '排除条件',
+        span: 24,
+        type: 'textarea',
+        max: 400
+      },
+      {
+        name: 'diagnosis',
+        label: '诊断依据',
+        span: 24,
+        type: 'textarea',
+        max: 400
+      },
+      {
+        name: 'basisOfTreatmentPlan',
+        label: '治疗方案依据',
+        span: 24,
+        type: 'textarea',
+        max: 400
+      }
+    ]
+    let queryObj = this.$ever.createObjFromSchema(querySchema)
+    queryObj.providerList = []
+    queryObj.diagnosisList = []
+    return {
+      api,
+      querySchema,
+      queryObj,
+      curProviderList: [],
+      typeOptions: [
+        { id: 0, name: '小于等于' },
+        { id: 1, name: '范围之间' },
+        { id: 2, name: '等于' }
+      ],
+      disabledHandle: true,
+      // 定义数组存储机构的id与名字键值对，方便科室的时候查
+      fitOrigIdsDic: {},
+      rules: {
+        pathwayName: [
+          { required: true, message: '必填项', trigger: 'blur' }
+        ],
+        orgId: [
+          { required: true, message: '必填项', trigger: 'change' }
+        ],
+        providerList: [
+          { required: true, message: '必填项', validator: validate }
+        ],
+        diagnosisList: [
+          { required: true, message: '必填项', validator: validate }
+        ]
+        // hospitalDayFrom: [
+        //   {min: 0, message: '天数需大于0', trigger: 'blur'},
+        //   {type: 'number', message: '天数必须为数字值'}
+        // ],
+        // hospitalDayTo: [
+        //   {min: 0, message: '天数需大于0', trigger: 'blur'},
+        //   {type: 'number', message: '天数必须为数字值'}
+        // ],
+        // standardFeeFrom: [
+        //   {min: 0, message: '金额需大于0', trigger: 'blur'},
+        //   {type: 'number', message: '金额必须为数字值'}
+        // ],
+        // standardFeeTo: [
+        //   {min: 0, message: '金额需大于0', trigger: 'blur'},
+        //   {type: 'number', message: '金额必须为数字值'}
+        // ],
+        // ageFrom: [
+        //   {min: 0, message: '年龄需大于0需大于0', trigger: 'blur'},
+        //   {type: 'number', message: '年龄需大于0必须为数字值'}
+        // ],
+        // ageTo: [
+        //   {min: 0, message: '年龄需大于0', trigger: 'blur'},
+        //   {type: 'number', message: '年龄需大于0必须为数字值'}
+        // ]
+      }
+    }
+  },
+  watch: {
+    'queryObj.orgId' (val) {
+      if (val) {
+        let params = { clinicId: val }
+        packageapi.getDptsByOrgId(params).then(result => {
+          if (result.data && result.data.length) {
+            this.curProviderList = result.data
+            this.$ever.getFieldFromSchema(this.querySchema, 'providerList').props.options = result.data
+            this.disabledHandle = false
+          }
+        })
+      } else {
+        this.$ever.getFieldFromSchema(this.querySchema, 'providerList').props.options = []
+        this.disabledHandle = false
+      }
+    }
+  },
+  created () {
+    // 获取集团旗下所有机构
+    selectInquireList.methods._clinicSelect().then(res => {
+      res.forEach(item => {
+        item.id = item.id + ''
+      })
+      this.$ever.getFieldFromSchema(this.querySchema, 'orgId').props.options = res
+    })
+    if (this.$route.params.id !== '0') {
+      this.getPathway()
+    }
+  },
+  components: {
+  },
+  methods: {
+    async getPathway () {
+      let params = {
+        id: this.$route.params.id
+      }
+      let result = await api.getClinicalPathway(params)
+      if (result) {
+        this.queryObj = result
+        if (this.queryObj.sex) {
+          this.queryObj.sex = this.queryObj.sex + ''
+        } else {
+          this.queryObj.sex = ''
+        }
+        this.$emit('get-title', this.queryObj.pathwayName)
+        this.$emit('edit', result)
+        // 恢复选择的诊断
+        this.queryObj.diagnosisList = this.queryObj.diagnosisList || []
+        this.queryObj.diagnosisList.forEach((item, index) => {
+          item.diseaseCode = item.diagnosisId
+          item.diseaseName = item.diagnosisName
+        })
+        // 恢复选择的科室
+        this.queryObj.providerList = this.queryObj.providerList || []
+        let arr = []
+        this.queryObj.providerList.forEach((item, index) => {
+          arr.push(item.providerId)
+        })
+        this.queryObj.providerList = arr
+      }
+    },
+    submitForm () {
+      let obj = JSON.parse(JSON.stringify(this.queryObj))
+      this.$refs.form.$refs.form.validate(valid => {
+        if (valid) {
+          if (obj.sex) obj.sex = Number(obj.sex)
+          obj.status = 1
+          obj.orgId = obj.orgId + ''
+          if (obj.diagnosisList && obj.diagnosisList.length) {  // 诊断
+            obj.diagnosisList.forEach(item => {
+              item.diagnosisId = item.diseaseCode
+              item.diagnosisName = item.diseaseName
+            })
+          } else {
+            obj.diagnosisList = []
+          }
+          let providerList = []
+          if (obj.providerList && obj.providerList.length) { // 科室
+            this.curProviderList.forEach((value) => {
+              obj.providerList.forEach(item => {
+                if (value.id === item) {
+                  providerList.push({
+                    providerId: item,
+                    providerName: value.name
+                  })
+                }
+              })
+            })
+          } else {
+            providerList = []
+          }
+          obj.providerList = providerList
+          if (this.$route.params.id !== '0') {
+            api.updateClinicalPathway(obj).then(res => {
+              if (res) {
+                this.$messageTips(this, 'success', '编辑成功', '提示')
+                this.$emit('success', res)
+              }
+            })
+          } else {
+            api.createClinicalPathway(obj).then(res => {
+              if (res) {
+                this.$messageTips(this, 'success', '添加成功', '提示')
+                this.$emit('success', res)
+              }
+            })
+          }
+        }
+      })
+    },
+    cancelForm () {
+      this.queryObj.ageFrom = ''
+      this.queryObj.ageTo = ''
+      this.queryObj.basisOfTreatmentPlan = ''
+      this.queryObj.diagnosis = ''
+      this.queryObj.diagnosisList = []
+      this.queryObj.exclusions = ''
+      this.queryObj.hospitalDayType = ''
+      this.queryObj.hospitalDayTypeFrom = ''
+      this.queryObj.hospitalDayTypeTo = ''
+      this.queryObj.orgId = ''
+      this.queryObj.pathwayName = ''
+      this.queryObj.providerList = []
+      this.queryObj.sex = ''
+      this.queryObj.standardFeeFrom = ''
+      this.queryObj.standardFeeTo = ''
+    }
+  }
+}
+</script>
+<style lang="scss" scoped>
+</style>
+<style lang="scss">
+.pathwayform {
+  #zhenduan-war {
+    .el-form-item {
+      margin-bottom: 10px !important;
+      .graylabel {
+        width: 110px;
+      }
+      .el-autocomplete {
+        width: 100% !important;
+      }
+    }
+    .el-form {
+      .el-row:last-child {
+        .el-form-item {
+          margin-bottom: 0 !important;
+        }
+      }
+    }
+  }
+}
+</style>

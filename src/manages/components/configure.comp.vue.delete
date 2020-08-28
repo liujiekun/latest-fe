@@ -1,0 +1,126 @@
+<template>
+  <div>
+    <ever-table
+      :columns="columns"
+      @eventChange="eventChange"
+      :data="tableData">
+      <template slot="isConfig">
+        <el-table-column prop="isConfig" label="是否集团统一管控" align="center">
+          <!-- <template slot="header" slot-scope="scope">
+          </template> -->
+          <template slot-scope="scope">
+            <el-switch v-model="scope.row.isConfig" @change="handlerSwitch(scope.row)" :active-value="1" :inactive-value="0"></el-switch>
+            <!-- :disabled="true" -->
+            <!-- :showLock="true" -->
+            <!-- <wh-switch
+            v-model="scope.row.isConfig"
+            :textList="YES_NO"
+            @change="handlerSwitch"
+          ></wh-switch> -->
+          </template>
+        </el-table-column>
+      </template>
+      <!-- <template slot="ownerNum">
+        <el-table-column prop="ownerNum" label="自主管理机构">
+          <template slot-scope="scope">
+            <template v-if="scope.row.isConfig">
+              <a @click="handlerOwner(scope.row)" class="iconfont icon-jituan"></a>
+              <span class="ml10" v-if="scope.row.ownerNum">共有{{scope.row.ownerNum}}家机构</span>
+              <span v-else>无</span>
+            </template>
+            <template v-else>
+            </template>
+          </template>
+        </el-table-column>
+      </template> -->
+    </ever-table>
+    <!-- <self-management
+      ref="selfManagement"
+      :dictType="dictType"
+      :dictId="dictId"
+      :tableLoading="tableLoading"
+      :treeData="treeData"></self-management> -->
+  </div>
+</template>
+
+<script>
+// import whSwitch from '@/warehouse/page/components/wh.switch'
+import { debounce } from '@/util/common'
+// import selfManagement from './self.management'
+// import api from '@/manages/page/configure/configapi'
+// const YES_NO = [{ id: 1, name: '是' }, { id: 0, name: '否' }]
+export default {
+  props: {
+    // firstColumn: { // 表格第一列展示标题和字段名称
+    //   type: Object,
+    //   default () {
+    //     return {
+    //       prop: 'name',
+    //       label: '数据字典',
+    //       width: 400
+    //     }
+    //   }
+    // },
+    value: {
+      type: Array,
+      default: () => []
+    }
+  },
+  data () {
+    return {
+      // YES_NO,
+      columns: [
+        // this.firstColumn,
+        {
+          prop: 'description',
+          label: '数据字典',
+          width: 400
+        },
+        {
+          prop: 'isConfig',
+          slotName: 'isConfig'
+        },
+        // {
+        //   slotName: 'ownerNum' // 暂时去掉自主管理机构 2019.06.11
+        // }
+      ],
+      tableLoading: false,
+      tableData: this.value,
+      treeData: [],
+      dictType: 0,
+      dictId: 0
+    }
+  },
+  watch: {
+    value (v) {
+      this.tableData = v
+    }
+  },
+  methods: {
+    // async getTree (id) {
+    //   await api.tree(id).then(res => {
+    //     console.log(res)
+    //     this.treeData = [res]
+    //   })
+    // },
+    // async handlerOwner (row) {
+    //   this.dictType = +row.type
+    //   this.dictId = +row.id
+    //   this.tableLoading = true
+    //   this.$refs.selfManagement.open(true)
+    //   await this.getTree(this.dictId)
+    //   this.tableLoading = false
+    // },
+    eventChange ({ btnType, col, row }) {
+      console.log(btnType, col, row)
+    },
+    handlerSwitch: debounce(function (row) {
+      this.$emit('switch:update', row)
+    })
+  },
+  components: {
+    // whSwitch
+    // selfManagement
+  }
+}
+</script>

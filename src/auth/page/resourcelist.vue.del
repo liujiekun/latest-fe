@@ -1,0 +1,281 @@
+<template>
+  <div class="layout_inner">
+    <div class="main-head">
+      <el-row :gutter="10">
+        <el-col :span="20">
+          <el-input placeholder="输入关键字进行过滤" v-model="filterText"></el-input>
+        </el-col>
+        <el-col :span="4">
+          <el-button @click="goPagenew">试用新版</el-button>
+        </el-col>
+      </el-row>
+    </div>
+    <div class="flex_col_1_auto main-wrap">
+      <el-tree
+        class="filter-tree"
+        ref="tree"
+        v-model="filterText"
+        v-loading="loading"
+        :data="treeObj"
+        node-key="rid"
+        draggable
+        @node-drop="handleDrop"
+        :allow-drop="allowDrop"
+        :allow-drag="allowDrag"
+        :default-expanded-keys="defaultExpandList"
+        :props="defaultProps"
+        :filter-node-method="filterNode"
+      >
+        <div class="custom-tree-node" slot-scope="{ node, data }">
+          <span :class="[{'group-node': !data.menuId}, (node.data.type === 2 ? 'cBlue' : '')]">
+            {{ getNodeDisplay(node) }}
+          </span>
+          <template v-if="data.helpCenterCode">
+            <i class="icon iconfont icon-tixing1"></i>
+          </template>
+          <span class="edit-btn">
+            <el-button
+              v-if="data.menuId"
+              type="primary"
+              size="mini"
+              icon="el-icon-edit"
+              @click="$router.push({name:'resourcesAdd', params: {id: data.menuId, type: getType('edit', node, data)}})"
+            ></el-button>
+            <el-button
+              type="primary"
+              size="mini"
+              icon="el-icon-plus"
+              @click="$router.push({name:'resourcesAdd', params: {id: data.menuId || 0, type: getType('add', node, data)}})"
+            ></el-button>
+            <el-button v-if="data.menuId" size="mini" type="danger" icon="el-icon-delete" @click="() => {deleteNode(node, data)}"></el-button>
+            <el-button v-if="data.menuId && data.type !== 2" size="mini" @click="goHelpPage(node, data)">使用帮助</el-button>
+          </span>
+        </div>
+      </el-tree>
+    </div>
+    <div style="padding: 10px 0 0 25px">
+      <el-button
+        type="primary"
+        size="medium"
+        @click="$router.push({name:'resourcesAdd', params: {id: 0, type: getType('add', null, null)}})"
+      >添加工作站</el-button>
+      <el-button
+        type="primary"
+        size="medium"
+        @click="$router.push({name:'resSql'})"
+      >导出sql</el-button>
+    </div>
+  </div>
+</template>
+
+<script>
+import api from '@/auth/store/resourceapi'
+
+export default {
+  components: {
+  },
+  watch: {
+    filterText (val) {
+      this.$refs.tree.filter(val)
+    }
+  },
+  created () {
+    this.getTree()
+  },
+  data () {
+    return {
+      filterText: '',
+      treeObj: [],
+      defaultProps: {
+        children: 'list',
+        label: 'name'
+      },
+      defaultExpandList: [],
+      loading: true,
+    }
+  },
+  methods: {
+    goPagenew () {
+      this.$router.push({
+        name: 'resourcesnew',
+      })
+    },
+    // 行数据权限
+    goAurhRow (node, data) {
+      this.$router.push({
+        name: 'authrow',
+        params: {
+          rid: data.menuId,
+        }
+      })
+    },
+    /**
+     * 新增编辑菜单时的参数
+     * 形如 add_parent_1_1
+     * 第一个参数 是新增还是编辑 add edit
+     * 第二个参数 是一级还是子级 parent sub
+     * 第三个参数 默认 group
+     * 第四个参数 url 是否必填 1 0
+     */
+    getType (op, node, data) {
+      let res
+      if (node) {
+        if (op === 'edit') {
+          if (data.parentId === '0') {
+            // 编辑一级
+            res = 'edit_parent__1'
+          } else {
+            if (node.level === 3) {
+              // 编辑二级
+              res = 'edit_sub__1'
+            } else {
+              res = 'edit_sub__0'
+            }
+          }
+        } else {
+          if (!data.menuId) {
+            // 新增一级
+            res = `add_parent_${data.groupCode}_1`
+          } else {
+            if (node.level === 3) {
+              // 新增二级
+              res = 'add_sub__1'
+            } else {
+              res = 'add_sub__0'
+            }
+          }
+        }
+      } else {
+        res = 'add_parent__1'
+      }
+      return res
+    },
+    // 跳转去帮助页面
+    goHelpPage (node, data) {
+      let a = this.getResArr(data.rid).join('|')
+      this.$router.push({
+        name: 'resourcesHelp',
+        params: {
+          rid: data.menuId,
+          rName: encodeURI(a)
+        }
+      })
+    },
+    // 获取菜单的层级结构
+    getResArr (rid) {
+      let arr = []
+      this.treeObj.forEach(item => {
+        if (item.list) {
+          item.list.forEach(ite => {
+            if (ite.rid === rid) {
+              arr = [item.name, ite.name]
+            } else {
+              if (ite.list) {
+                ite.list.forEach(it => {
+                  if (it.rid === rid) {
+                    arr = [item.name, ite.name, it.name]
+                  } else {
+                    if (it.list) {
+                      it.list.forEach(i => {
+                        if (i.rid === rid) {
+                          arr = [item.name, ite.name, it.name, i.name]
+                        }
+                      })
+                    }
+                  }
+                })
+              }
+            }
+          })
+        }
+      })
+      return arr
+    },
+    // 获取页面的层级
+    handleDrop (draggingNode, dropNode) {
+      api.updateMenusIndexNumbers(dropNode.parent.data.list.map((item, i) => ({ menuId: item.menuId, indexNum: i + 1 }))).then((res) => {
+        if (res.head.errCode === 0) {
+          this.$messageTips(this, 'success', '排序更新成功！', '提示')
+        }
+      })
+    },
+    allowDrop (draggingNode, dropNode, dropType) {
+      let allow = false
+      if (dropNode.level === 2) {
+        allow = draggingNode.data.groupCode === dropNode.data.groupCode
+      } else {
+        allow = draggingNode.data.parentId === dropNode.data.parentId
+      }
+      return draggingNode.level === dropNode.level && dropType !== 'inner' && allow
+    },
+    // 不允许拖拽分组
+    allowDrag (draggingNode) {
+      return draggingNode.level !== 1
+    },
+    filterNode (value, data) {
+      if (!value) return true
+      return data.name.indexOf(value) !== -1
+    },
+    // 针对后端数据打补丁：为了授权方便，把按钮都放到了btnList里面，在菜单权限编辑页面再放回去
+    _recursion (data, name) {
+      if (data && data.length > 0) {
+        data.forEach(item => {
+          if (item[name]) {
+            this._recursion(item[name], name)
+          }
+          if (item.btnList) {
+            item.list = item.btnList
+          }
+        })
+      }
+    },
+    getTree () {
+      api.listTree().then(data => {
+        this.defaultExpandList = []
+        this.treeObj = data.menuList.map((item, i) => {
+          this.defaultExpandList.push(`rid-group${i}`)
+          return { ...item, rid: `rid-group${i}`, groupCode: item.list[0].groupCode }
+        })
+        this._recursion(this.treeObj, 'list')
+        this.loading = false
+      })
+    },
+    deleteNode (node, data) {
+      this.$confirm('此操作将永久删除该记录, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        return api.del(data.menuId).then((res) => {
+          if (res.head.errCode === 0) {
+            this.$messageTips(this, 'success', '删除成功！', '提示')
+            const parent = node.parent
+            const children = parent.data.list || parent.data
+            const index = children.findIndex(d => d.rid === data.rid)
+            children.splice(index, 1)
+          }
+        })
+      })
+    },
+    getNodeDisplay (node) {
+      return (node.level === 1 || node.level === 2) ? node.label : (node.data.color && node.data.color.trim() ? (node.label + (node.data.color.startsWith('#') ? '' : `（${node.data.color}）`)) : node.label)
+    }
+  }
+}
+</script>
+<style scoped lang="less">
+.el-tree-node__content,
+.custom-tree-node {
+  width: 100%;
+}
+.group-node {
+  font-weight: bold;
+}
+.custom-tree-node:hover .edit-btn {
+  display: inline-block;
+}
+.edit-btn {
+  display: none;
+  margin-left: 30px;
+}
+</style>

@@ -1,0 +1,671 @@
+<template>
+  <div class="pathway_advice">
+    <el-row class="header">
+      <el-col :span="18" class="clearfix">
+        <el-radio-group class="checklist" v-model="trimfilters">
+          <el-radio :label="-1">全部</el-radio>
+          <el-radio :label="1">长期</el-radio>
+          <el-radio :label="0">临时</el-radio>
+        </el-radio-group>
+        <el-select
+          v-model="filters"
+          multiple
+          placeholder="请选择医嘱类型"
+          class="checklist"
+          style="width: 400px;"
+        >
+          <el-option
+            v-for="item in selectOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
+          ></el-option>
+        </el-select>
+        <!-- <sys-type class="checklist" style="width: 400px;" code="THC_WH_OBJECT_SUB_TYPE" v-model="filters" placeholder="请选择医嘱类型" :multiple="true"></sys-type> -->
+      </el-col>
+    </el-row>
+    <div class="all-body">
+      <table style="width:100%" cellpadding="0" cellspacing="0" class="table-wrap">
+        <thead>
+          <tr>
+            <th align="center" width="5%">
+              <el-checkbox
+                v-model="allSelectSend"
+                @change="val=>{selected(val,-1,{})}"
+                :disabled="!currentStage.id"
+              >全选</el-checkbox>
+            </th>
+            <th align="center" width="8%">阶段</th>
+            <th align="center" width="8%">长/临</th>
+            <th align="center" width="7%">类型</th>
+            <th align="left" width="10%">医嘱</th>
+            <th align="left" width="26%"></th>
+            <th align="left" width="10%">嘱托</th>
+            <th align="center" width="8%">金额</th>
+            <th align="center" width="7%">顺序</th>
+            <th align="left" width="180px">操作</th>
+          </tr>
+        </thead>
+        <tbody v-if="Object.keys(waitSendList).length">
+          <tr v-for="(obj, key, i) in waitSendList" :key="i">
+            <td colspan="10">
+              <el-checkbox-group v-model="selectSend">
+                <table width="100%" cellpadding="0" cellspacing="0" class="table-item">
+                  <tbody>
+                    <tr v-for="(item, j) in obj">
+                      <td align="center" width="5%">
+                        <el-checkbox
+                          class="hidetext2"
+                          :label="key"
+                          v-if="j===0"
+                          @change="val=>{selected(val,j,item)}"
+                          :disabled="!currentStage.id"
+                        >必</el-checkbox>
+                      </td>
+                      <td
+                        align="center"
+                        width="8%"
+                        class="leftline"
+                        :class="{line: j===obj.length-1}"
+                      >{{item.stageName}}</td>
+                      <td
+                        align="center"
+                        width="8%"
+                        class="leftline"
+                        :class="{line: j===obj.length-1}"
+                      >
+                        <label>{{$t(item.termType === 0 ? '临时' : '长期')}}</label>
+                      </td>
+                      <td align="center" width="7%" class="leftline">
+                        <template v-if="j===0">
+                          <sys-value type="THC_WH_OBJECT_SUB_TYPE" :code="item.adviceType"></sys-value>
+                        </template>
+                      </td>
+                      <td
+                        align="left"
+                        width="10%"
+                        class="leftline"
+                        :class="{line: j===obj.length-1}"
+                      >
+                        <template v-if="item.adviceType === '303' || item.adviceType === '304'">
+                          <span
+                            v-for="(drag, k) in JSON.parse(item.adviceContent, true)"
+                            :key="k"
+                            class="eline"
+                          >
+                            <label class="bold">{{drag.serviceItem.name}}</label>
+                            <label style="top:-5px;" class="lab" v-if="drag.decoction">
+                              (
+                              <sys-value type="THC_SYS_DECOCTINGMETHOD" :code="drag.decoction"></sys-value>)
+                            </label>
+                            <label
+                              style="bottom:-5px;"
+                              class="lab"
+                            >{{drag.amount}}{{drag.amountUnitTxt}}</label>
+                          </span>
+                        </template>
+                        <template v-else>
+                          <el-row :gutter="10">
+                            <el-col :span="24">
+                              <template v-if="obj.length > 1">
+                                <span v-if="j===0">┏</span>
+                                <span v-if="j===obj.length-1">┗</span>
+                                <span v-if="j > 0 && j < obj.length-1">┣</span>
+                              </template>
+                              <template v-if="item.doctorAdviceType === '2'">
+                                <service-set-items :item="item"></service-set-items>
+                              </template>
+                              <template v-else>
+                                <drug-info
+                                  class="bold"
+                                  v-if="['301', '302'].includes(item.adviceType)"
+                                  :drug-obj="item"
+                                ></drug-info>
+                                <span class="bold" v-else>{{item.adviceName}}</span>
+                              </template>
+                              <span v-if="item.shopSetItemId" class="green_icon_small_ric">套餐</span>
+                            </el-col>
+                          </el-row>
+                        </template>
+                      </td>
+                      <td align="left" width="26%" :class="{line: j===obj.length-1}">
+                        <advice-item-show :item="item" :visit-type="visitType"></advice-item-show>
+                      </td>
+                      <td align="left" width="10%" :class="{line: j===obj.length-1}">
+                        <span v-if="item.entrust">{{item.entrust}}</span>
+                        <span v-else>--</span>
+                      </td>
+                      <td align="center" width="8%" :class="{line: j===obj.length-1}">
+                        <label>
+                          <template v-if="item && item.source === '2'">¥0.00</template>
+                          <template
+                            v-else
+                          >¥ {{item && item.price ? parseFloat(item.price).toFixed(2) : '0.00'}}</template>
+                        </label>
+                      </td>
+                      <td align="center" width="7%" :class="{line: j===obj.length-1}">
+                        <template>
+                          <span class="ordericonBox" v-if="dataList.length > 1">
+                            <i
+                              v-if="i!==0"
+                              class="el-icon-sort-up ordericon"
+                              @click="handleMoveUp(item)"
+                              :class="{'disabled':!currentStage.id}"
+                            ></i>
+                            <i
+                              v-if="i<dataList.length - 1"
+                              class="el-icon-sort-down ordericon"
+                              @click="handleMoveDown(item)"
+                              :class="{'disabled':!currentStage.id}"
+                            ></i>
+                          </span>
+                          <span v-else>--</span>
+                        </template>
+                      </td>
+                      <td align="left" class="leftline" width="180px">
+                        <template v-if="j===0">
+                          <el-button
+                            type="primary"
+                            v-if="!item.shopSetItemId"
+                            @click="editWaitService(key,item.id)"
+                            size="small"
+                            :disabled="!currentStage.id"
+                          >{{$t('编辑')}}</el-button>
+                          <ever-confirm
+                            :msg="'确认删除该项医嘱？'"
+                            :plain="true"
+                            :action="$t('删除')"
+                            @confirm="delWaitService(key, item.id, null, true)"
+                            :disabled="!currentStage.id"
+                          ></ever-confirm>
+                        </template>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </el-checkbox-group>
+            </td>
+          </tr>
+        </tbody>
+        <tbody v-else>
+          <tr>
+            <td colspan="10">
+              <ever-no-data></ever-no-data>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <!-- <ever-no-data style="position: absolute; margin: 0; width: 130px; height: 130px; left: 50%; margin-left: -65px; top: 50%;margin-top: -65px;" v-else></ever-no-data> -->
+    </div>
+    <el-row class="send-footer">
+      <el-col :span="24" align="right">
+        <template>
+          <span style="margin-right:20px;">
+            {{$t('总金额')}}：
+            <label
+              style="font-size:26px;font-weight: bold;"
+              class="cRed"
+            >￥{{totalAllPrice}}</label>
+          </span>
+        </template>
+      </el-col>
+    </el-row>
+  </div>
+</template>
+<script>
+import api from '@/form/store/pathmanage'
+import sysvalue from '@/warehouse/store/sysvalueapi'
+import drugInfo from '@/inpatient/components/drug.info'
+import adviceItemShow from '@/inpatient/components/medical.orders/advice.item.show'
+import serviceSetItems from '@/inpatient/components/medical.orders/service.set.items'
+// import storage from '@/util/storage'
+import { objSortBy, floatTool } from '@/util/common'
+export default {
+  data () {
+    return {
+      api,
+      // storage,
+      allSelectSend: false,
+      selectSend: [],
+      trimfilters: -1,
+      filters: [],
+      filterList: [],
+      dataList: [],
+      sortList: [],
+      visitType: 3,
+      isDelete: false,
+      isEdit: false,
+      selectOptions: []
+    }
+  },
+  props: ['currentStage', 'sendData', 'keyflag'],
+  components: {
+    drugInfo,  // 药品信息组件
+    adviceItemShow,
+    serviceSetItems
+  },
+  computed: {
+    totalAllPrice () {
+      let count = 0
+      let data = []
+      data = data.concat(this.dataList)
+      if (data.length) {
+        data.map(item => {
+          if (item) count = floatTool.add(count, ((item.source !== '2' && parseFloat(item.price)) || 0))
+        })
+      }
+      return count.toFixed(2)
+    },
+    waitSendList () {
+      let obj = {}
+      if (!this.filterList[0]) {
+        return []
+      }
+      this.filterList = objSortBy(this.filterList, 'isMain')
+      this.filterList.map(v => {
+        if (obj[v.adviceId]) {
+          obj[v.adviceId].push(v)
+        } else {
+          obj[v.adviceId] = [v]
+          this.sortList.push(v)
+        }
+      })
+      return obj
+    }
+  },
+  created () {
+    // 过滤值集中三级分类
+    sysvalue.listOnce('THC_WH_OBJECT_SUB_TYPE').then(options => {
+      options.forEach(item => {
+        if (item.sysTypeObject && item.sysTypeObject.code === 'THC_WH_OBJECT_TYPE') {
+          this.selectOptions.push(item)
+        }
+      })
+    })
+  },
+  methods: {
+    async editWaitService (flag, id) {
+      let _data = []
+      this.waitSendList[flag].map((item, i) => {
+        item.index = i
+        item.temp = new Date().getTime()
+        _data.push(item)
+      })
+      this.isEdit = true
+      this.delWaitService(flag, id, 1)
+      this.$emit('edit', _data)
+    },
+    async delWaitService (flag, id, n) {
+      if (n) {
+        this.isDelete = false
+      } else {
+        this.isDelete = true
+      }
+      let m = -1
+      this.waitSendList[flag].forEach((val, key) => {
+        if (val.id === id) {
+          m = key
+        }
+      })
+      if (m > -1) {
+        delete this.waitSendList[flag]
+      }
+      let x = []
+      this.dataList.forEach((item, index) => {
+        if (item.adviceId !== flag) {
+          x.push(item)
+        }
+      })
+      this.dataList = x
+      this.getParams(this.dataList)
+    },
+    async getAdviceList () {
+      let params = {}
+      if (!Array.isArray(this.currentStage) && this.currentStage) {     // 单独阶段
+        params.stageId = this.currentStage.id
+      } else if (Array.isArray(this.currentStage)) {      // 全部阶段
+        params.pathwayId = this.currentStage[0].pathwayId
+      }
+      let result = await api.findAdviceDtos(params)
+      if (result) {
+        this.dataList = result
+        this.$emit('update', result)
+        this.selectSend = []
+        this.dataList.forEach((h, n) => {
+          if (h.mustselectFlag) {
+            this.selectSend.push(h.adviceId)
+          }
+        })
+      }
+    },
+    async createAdvice (params) {
+      let result = await api.createAdvice(params)
+      if (result) {
+        if (this.isDelete) {
+          this.$messageTips(this, 'success', '删除成功', '提示')
+        }
+        if (!this.isEdit && !this.isDelete) {
+          this.$messageTips(this, 'success', '保存成功', '提示')
+        }
+        this.getAdviceList()
+        this.isEdit = false
+        this.isDelete = false
+      }
+    },
+    selected (val, index, item) {
+      if (!this.filterList.length) {
+        return false
+      }
+      if (index > -1) {   // 单独勾选
+        this.dataList.forEach((h, n) => {
+          if (item.id === h.id) {
+            h.mustselectFlag = val ? 1 : 0
+          }
+        })
+      } else {   // 全选
+        this.dataList.forEach((h, n) => {
+          h.mustselectFlag = val ? 1 : 0
+        })
+      }
+      this.getParams(this.dataList)
+    },
+    handleMoveUp (item) {
+      if (!this.currentStage.id) {
+        return false
+      }
+      let n = -1
+      let preNumber = -1
+      let preAdviceId = ''
+      this.sortList.forEach((x, y) => {
+        if (x.id === item.id) {
+          n = y
+        }
+      })
+      if (this.sortList[n - 1].stageId !== item.stageId) {
+        return this.$messageTips(this, 'warning', '只可在同一阶段内调整顺序', '提示')
+      } else {
+        preNumber = this.sortList[n - 1].number
+        preAdviceId = this.sortList[n - 1].adviceId
+        this.dataList.forEach((i, j) => {
+          if (i.adviceId === item.adviceId) {
+            i.number = preNumber
+          } else if (i.adviceId === preAdviceId) {
+            i.number = item.number
+          }
+        })
+      }
+      this.getParams(this.dataList)
+    },
+    handleMoveDown (item) {
+      if (!this.currentStage.id) {
+        return false
+      }
+      let n = -1
+      let nextNumber = -1
+      let nextAdviceId = ''
+      this.sortList.forEach((x, y) => {
+        if (x.id === item.id) {
+          n = y
+        }
+      })
+      if (this.sortList[n + 1].stageId !== item.stageId) {
+        return this.$messageTips(this, 'warning', '只可在同一阶段内调整顺序', '提示')
+      } else {
+        nextNumber = this.sortList[n + 1].number
+        nextAdviceId = this.sortList[n + 1].adviceId
+        this.dataList.forEach((i, j) => {
+          if (i.adviceId === item.adviceId) {
+            i.number = nextNumber
+          } else if (i.adviceId === nextAdviceId) {
+            i.number = item.number
+          }
+        })
+      }
+      this.getParams(this.dataList)
+    },
+    getParams (list) {
+      let params = {
+        stageId: Array.isArray(this.currentStage) ? this.currentStage[0].id : this.currentStage.id,
+        advices: list
+      }
+      this.createAdvice(params)
+    },
+    setChecked () {
+      this.selectSend = []
+      for (let key in this.waitSendList) {
+        this.selectSend.push(key)
+      }
+    },
+    setGroupData () {
+      this.filterList = []
+      if (this.trimfilters > -1) {
+        // 长期或临时医嘱
+        this.dataList.forEach((item, index) => {
+          if (item.termType === this.trimfilters) {
+            this.filterList.push(item)
+          }
+        })
+      } else {
+        // 全部
+        this.filterList = JSON.parse(JSON.stringify(this.dataList))
+      }
+      // 医嘱类型
+      if (this.filters && this.filters.length) {
+        let list = []
+        this.filterList.forEach((item, index) => {
+          if (this.filters.includes(item.adviceType)) {
+            list.push(item)
+          }
+        })
+        this.filterList = list
+      }
+    }
+  },
+  watch: {
+    'keyflag': {
+      handler (val) {
+        if (val > 1 && this.currentStage) {
+          this.getAdviceList()
+        }
+      },
+      immediate: true
+    },
+    'currentStage' (val) {
+      this.getAdviceList()
+    },
+    'sendData' (val) {
+      let n = JSON.parse(JSON.stringify(this.dataList.length))
+      val.forEach(item => {
+        item.stageId = Array.isArray(this.currentStage) ? this.currentStage[0].id : this.currentStage.id
+        item.mustselectFlag = 1
+        item.number = n
+        this.dataList.push(item)
+      })
+      let params = {
+        stageId: Array.isArray(this.currentStage) ? this.currentStage[0].id : this.currentStage.id,
+        advices: this.dataList
+      }
+      this.createAdvice(params)
+    },
+    'selectSend' (val) {
+      setTimeout(() => {
+        if (val.length === Object.keys(this.waitSendList).length) {
+          this.allSelectSend = true
+        } else {
+          this.allSelectSend = false
+        }
+        if (!val.length) {
+          this.allSelectSend = false
+        }
+      }, 50)
+    },
+    'allSelectSend' (val) {
+      if (val) {
+        this.setChecked()
+      } else {
+        if (this.selectSend.length === Object.keys(this.waitSendList).length) this.selectSend = []
+      }
+    },
+    'dataList' (val) {
+      this.setGroupData()
+    },
+    'trimfilters' (val) {
+      this.setGroupData()
+    },
+    'filters' (val) {
+      this.setGroupData()
+    }
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+.pathway_advice {
+  font-size: 14px;
+  width: 100%;
+  position: relative;
+  .header {
+    .checklist {
+      display: inline-block;
+      margin-left: 20px;
+      vertical-align: middle;
+      /deep/ .el-radio + .el-radio,
+      /deep/ .el-checkbox + .el-checkbox {
+        margin-left: 20px;
+        line-height: 1.5;
+      }
+    }
+  }
+  .all-body {
+    height: 455px;
+    overflow: auto;
+    margin-top: 10px;
+    position: relative;
+    .table-wrap {
+      font-size: 14px !important;
+      border: 1px solid #ccc;
+    }
+    /deep/.el-checkbox-group {
+      font-size: 14px !important;
+    }
+    .table-wrap thead tr th {
+      background: #eeeeee;
+      padding: 7px;
+      line-height: 24px;
+    }
+    .table-wrap > tbody > tr:nth-child(even) > td {
+      background: #eeeeee;
+    }
+    .table-item tr td {
+      line-height: 24px;
+      padding: 7px;
+      vertical-align: middle;
+      border: none;
+    }
+    .table-item tr td .iconfont {
+      color: #999;
+    }
+    .table-item tr:last-child td {
+      border: none !important;
+    }
+    .table-wrap .el-button--danger {
+      color: #fa5555;
+      background: #fee;
+      border-color: #fdbbbb;
+    }
+    .table-wrap .el-button--primary {
+      color: #409eff;
+      background: #ecf5ff;
+      border-color: #b3d8ff;
+    }
+    .table-wrap .el-button--info {
+      color: #878d99;
+      background: #f3f4f5;
+      border-color: #cfd1d6;
+    }
+    .table-wrap .el-button--success {
+      color: #67c23a;
+      background: #f0f9eb;
+      border-color: #c2e7b0;
+    }
+    .table-wrap tr.red td {
+      color: #ee4433;
+    }
+    .table-wrap tr.green td {
+      color: #5cbc2c;
+    }
+    .table-wrap tr.gray td {
+      color: #bbbbbb;
+    }
+    .introduce {
+      color: #666666;
+      font-size: 14px;
+      margin-right: 10px;
+      border: none;
+    }
+    .introduce span {
+      color: #666666;
+    }
+    .introduce i {
+      color: #bbbbbb;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .nodata {
+      position: absolute;
+      margin: 0;
+      width: 130px;
+      height: 130px;
+      left: 50%;
+      margin-left: -65px;
+      top: 50%;
+      margin-top: -65px;
+    }
+    .eline {
+      word-wrap: break-word;
+      display: inline-block;
+    }
+    .ordericonBox {
+      margin: 0 auto;
+      display: inline-block;
+      width: 50px;
+    }
+    .ordericon {
+      cursor: pointer;
+      font-size: 20px;
+      width: 25px;
+      height: 20px;
+    }
+    .el-icon-sort-up {
+      float: left;
+    }
+    .el-icon-sort-down {
+      float: right;
+    }
+    .disabled {
+      cursor: not-allowed;
+    }
+  }
+  .send-footer {
+    padding-top: 10px;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    left: 0;
+  }
+  .hide {
+    display: none;
+  }
+}
+@media (max-height: 770px) {
+  // .advice_list .all-body {
+  //   height: 305px;
+  // }
+  // .advice_list .h220 {
+  //   height: 144px;
+  // }
+  // .advice_list .mt20 {
+  //   margin-top: 10px;
+  // }
+}
+</style>

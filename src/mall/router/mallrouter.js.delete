@@ -1,0 +1,110 @@
+// import OrderList from '@/mall/page/orderlist'
+// import Frame from '@/mall/page/frame.vue'
+// import MallIndex from '@/mall/page/index.vue'
+// import MallDetails from '@/mall/page/details.vue'
+// import MyCarts from '@/mall/page/carts.vue'
+// import MyBuy from '@/mall/page/buy.vue'
+// import OrderDetail from '@/mall/page/orderdetail.vue'
+// import Recharge from '@/mall/page/recharge.vue'
+// import RechargeBuy from '@/mall/page/rechargebuy'
+// import GoodsCategories from '@/mall/page/goodscategories'
+// import GoodsSalling from '@/mall/page/goodssalling'
+// import GoodsForSall from '@/mall/page/goodsforsall'
+// import GoodsPublish from '@/mall/page/goodspublish'
+// import GoodsForsallEdit from '@/mall/page/goodsforsalledit'
+// import SaleService from '@/mall/page/saleservicelist'
+// import SaleServiceDetail from '@/mall/page/saleservicedetail'
+
+// export default [
+//   {
+//     path: '/mall',
+//     name: 'mall',
+//     redirect: '/mall/mallindex',
+//     component: Frame,
+//     children: [
+//       {
+//         path: 'orderlist',
+//         name: 'orderlist',
+//         component: OrderList
+//       },
+//       {
+//         path: 'saleservice',
+//         name: 'saleservice',
+//         component: SaleService
+//       },
+//       {
+//         path: 'saleservicedetail/:id',
+//         name: 'saleservicedetail',
+//         component: SaleServiceDetail
+//       },
+//       {
+//         path: 'goodscategories',
+//         name: 'goodscategories',
+//         component: GoodsCategories
+//       },
+//       {
+//         path: 'goodssalling',
+//         name: 'goodssalling',
+//         component: GoodsSalling
+//       },
+//       {
+//         path: 'goodsforsall',
+//         name: 'goodsforsall',
+//         component: GoodsForSall
+//       },
+//       {
+//         path: 'goodsforsalledit/:id',
+//         name: 'goodsforsalledit',
+//         component: GoodsForsallEdit
+//       },
+//       {
+//         path: 'goodspublish',
+//         name: 'goodspublish',
+//         component: GoodsPublish
+//       },
+//       {
+//         path: 'mallindex',
+//         name: 'mallindex',
+//         component: MallIndex
+//       },
+//       {
+//         path: 'mallcarts',
+//         name: 'mallcarts',
+//         component: MyCarts,
+//         meta: {
+//           thirdActiveIndex: '/mall/mallindex'
+//         }
+//       },
+//       {
+//         path: 'malldetails/:id',
+//         name: 'malldetails',
+//         component: MallDetails
+//       },
+//       {
+//         path: 'recharge',
+//         name: 'recharge',
+//         component: Recharge
+//       },
+//       {
+//         path: 'rechargebuy/:id',
+//         name: 'rechargebuyedit',
+//         component: RechargeBuy
+//       },
+//       {
+//         path: 'rechargebuy',
+//         name: 'rechargebuy',
+//         component: RechargeBuy
+//       },
+//       {
+//         path: 'mallbuy/:ids',
+//         name: 'mallbuy',
+//         component: MyBuy
+//       },
+//       {
+//         path: 'orderdetails/:id',
+//         name: 'orderdetails',
+//         component: OrderDetail
+//       }
+//     ]
+//   }
+// ]

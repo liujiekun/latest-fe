@@ -1,0 +1,6 @@
+build/*.js
+config/*.js
+src/assets
+src/util/validate.js
+src/form/page/testdoc.vue
+*.html

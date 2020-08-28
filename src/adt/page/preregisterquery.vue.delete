@@ -1,0 +1,447 @@
+<template>
+  <div class="layout_inner">
+    <ever-form2
+      :schema="querySchema"
+      v-model="queryObj"
+      ref="form"
+      :inline="true"
+      :is-query="true"
+      @query="list()"
+    >
+      <template slot="preadmissionDatetime">
+        <el-date-picker
+          v-model="queryObj.preadmissionDatetime"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          value-format="yyyy-MM-dd hh:mm:ss"
+          end-placeholder="结束日期"
+          style="width:100%;"
+          @change="list()"
+        >
+        </el-date-picker>
+      </template>
+      <template slot="admitBedType">
+        <ever-select
+          :clearable="true"
+          v-model="queryObj.admitBedType"
+          :options="options"
+          @change="list()"
+        ></ever-select>
+      </template>
+      <template slot="default">
+        <el-form-item>
+          <el-checkbox
+            v-model="isPregister"
+            style="margin:2px 0 0 55px;"
+            @change="list()"
+          >预约登记</el-checkbox>
+          <el-button
+            class="ml5"
+            type="primary"
+            @click="list()"
+          >查询</el-button>
+        </el-form-item>
+      </template>
+    </ever-form2>
+    <el-table
+      v-loading="loading"
+      :data="tableData"
+      style="width: 100%"
+      @cell-click="showBasicInfoModal"
+    >
+      <el-table-column
+        label="状态"
+        :formatter="reverToStatusName"
+        width="70"
+      ></el-table-column>
+      <el-table-column
+        prop="inpatientNumber"
+        label="病案号"
+        width="150"
+      ></el-table-column>
+      <el-table-column
+        prop="name"
+        label="姓名"
+        width="90"
+        show-overflow-tooltip
+      >
+        <template slot-scope="scope">
+          <a href="javascript:void(0)">{{scope.row.name}}</a>
+        </template>
+      </el-table-column>
+      <el-table-column
+        :formatter="reverToGender"
+        label="性别"
+        width="50"
+      ></el-table-column>
+      <el-table-column
+        prop="mobile"
+        label="联系电话"
+        min-width="110"
+      ></el-table-column>
+      <el-table-column
+        prop="admitDepartmentName"
+        label="入院科室"
+        show-overflow-tooltip
+      ></el-table-column>
+      <el-table-column
+        prop="admitDiagnosis"
+        label="入院诊断"
+        show-overflow-tooltip
+      ></el-table-column>
+      <el-table-column
+        prop="admitRouteName"
+        label="入院途径"
+        show-overflow-tooltip
+      ></el-table-column>
+      <el-table-column
+        prop="admitDeposit"
+        label="押金金额"
+        align="right"
+        min-width="130"
+      >
+        <template slot-scope="scope">
+          {{scope.row.admitDeposit | formatToFinacial}}
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="hospitalizedAreaName"
+        label="病区"
+        show-overflow-tooltip
+      ></el-table-column>
+      <el-table-column
+        prop="admitBed"
+        label="床位"
+      ></el-table-column>
+      <el-table-column
+        prop="admitBedTypeName"
+        label="床型"
+        show-overflow-tooltip
+      ></el-table-column>
+      <el-table-column
+        label="入院时长(小时)"
+        :formatter="formatterInhour"
+        align="right"
+        width="120"
+      ></el-table-column>
+      <el-table-column
+        prop="preadmissionDatetime"
+        label="预计入院日期"
+        show-overflow-tooltip
+        width="160"
+      ></el-table-column>
+      <el-table-column
+        label="详情"
+        width="60"
+      >
+        <template slot-scope="scope">
+          <el-button
+            type="primary"
+            @click="querydetail(scope.row)"
+          >详情</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <ever-pagination
+      :page-sizes="pageSizes"
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
+      :totalCount="totalCount"
+    ></ever-pagination>
+    <el-dialog
+      title="入院登记详情"
+      :visible.sync="registerdetailshow"
+      width="70%"
+    >
+      <registerquerydetail :obj="obj"></registerquerydetail>
+    </el-dialog>
+    <el-dialog
+      title="基本信息"
+      :visible.sync="showBasicInfo"
+      width="98%"
+    >
+      <patientBasic
+        ref="basicinfo"
+        :id="patientId"
+        :isBloodEdit="true"
+        @formChange1="basicInfoChange"
+        @sourcepop="handleModal"
+      ></patientBasic>
+      <div class="savebtn">
+        <el-button
+          type="primary"
+          @click="saveBasicInfo"
+          :disabled="btnDisabled"
+        >保存</el-button>
+      </div>
+    </el-dialog>
+  </div>
+</template>
+<script>
+import api from '@/adt/store/registerquery.js'
+import registerapi from '@/adt/store/register'
+import registerquerydetail from '@/adt/page/registerquerydetail'
+import patientBasic from '@/crm/components/patiententry_horizontal.vue'
+import hospitalselect from '@/components/hospitalselect'
+import { setTimeout } from 'timers'
+let hosStatus = { '-2': '已撤销', '-1': '已取消', '0': '待入院', '11': '待入科', '12': '已入科', '13': '待出科', '14': '待出院', '2': '已出院' }
+// 设定床型，现在李建辉没空做接口，暂时代替
+// const admitBedType = '76d48068-8aa8-4f2f-a750-66ffb526aaf4'
+let queryschema = [
+  {
+    label: '住院科室',
+    name: 'admitDepartment',
+    comp: 'provider-select',
+    props: {
+      placeholder: '请输入患者科室',
+      clearable: true
+    },
+    span: 6
+  },
+  {
+    label: '患者姓名/档案号',
+    name: 'patientId',
+    comp: hospitalselect,
+    props: {
+      placeholder: '输入患者门诊档案号',
+      clearable: true,
+      filterable: true
+    },
+    span: 6
+  },
+  {
+    label: '预计入院日期',
+    name: 'preadmissionDatetime',
+    comp: 'custom',
+    span: 6
+  },
+  {
+    label: '床位类型',
+    name: 'admitBedType',
+    comp: 'custom',
+    span: 6
+  }
+]
+export default {
+  data () {
+    var queryobj = this.$ever.createObjFromSchema(queryschema)
+    return {
+      querySchema: queryschema,
+      queryObj: queryobj,
+      tableData: [],
+      obj: {},
+      preadmissionDatetime: '',
+      patientId: '',
+      isPregister: false,
+      registerdetailshow: false,
+      showBasicInfo: false,
+      pageSizes: [5, 10, 15, 20],
+      pagesize: 20,
+      pageIndex: 1,
+      totalCount: 10,
+      options: [],
+      loading: false,
+      btnDisabled: false,
+      basicInfo: {}
+    }
+  },
+  components: {
+    registerquerydetail,
+    patientBasic,
+    hospitalselect
+  },
+  created () {
+    api.getAdmitBedTypeList().then(result => {
+      for (let item of result.data && result.data.resultList) {
+        if (item.hospitalBedProperties) {
+          for (let v of item.hospitalBedProperties) {
+            if (v.propertyCode === 'SXX000126') {
+              this.options.push({ id: v.hospitalBedId, name: v.propertyValue })
+              break
+            }
+          }
+          continue
+        }
+      }
+    })
+    this.list()
+  },
+  watch: {
+    'registerdetailshow': function (val) {
+      if (!val) {
+        this.list()
+      }
+    },
+    'showBasicInfo': function (val) {
+      if (!val) {
+        this.list()
+      }
+    }
+  },
+  methods: {
+    async list () {
+      // let params = this.queryObj
+      this.loading = true
+      let params = {}
+      params.admitDepartment = this.queryObj.admitDepartment
+      // patientId现在是对象
+      params.patientId = this.queryObj.patientId && this.queryObj.patientId.patientId || ''
+      params.preadmissionDatetimeStart = this.queryObj.preadmissionDatetime[0]
+      params.preadmissionDatetimeEnd = this.queryObj.preadmissionDatetime[1]
+      params.admitBedType = this.queryObj.admitBedType
+      params.pagesize = this.pagesize
+      params.offset = (this.pageIndex - 1) * this.pagesize
+      params.preregistration = this.isPregister
+      api.admitRegistrationListQuery(params).then(result => {
+        if (result.head && result.head.errCode === 0) {
+          this.tableData = result.data.list
+          this.totalCount = result.data.totalCount
+          this.loading = false
+        }
+      })
+    },
+    reverToStatusName (row) {
+      return hosStatus[row.hosStatus]
+    },
+    reverToGender (row) {
+      if (row.sex === '1') {
+        return '男'
+      } else {
+        return '女'
+      }
+    },
+    // 查看入院登记信息
+    querydetail (row) {
+      this.obj = row
+      // 病区跟床位需要重新处理一下
+      this.obj.hospitalizedAreaName = {
+        id: this.obj.admitWard,
+        name: this.obj.hospitalizedAreaName
+      }
+      // 保险产品需要处理一下
+      this.obj.insuranceProductId = { id: this.obj.insuranceProductId, insuranceOrgID: this.obj.insuranceCompany }
+      // 注释掉的是有无入院证的区分逻辑
+      // if (row.hosStatus === '11' && row.register === 1) {
+      if (row.hosStatus === '11') {
+        this.obj.flag = 'normal'
+        // } else if (row.hosStatus === '11' && row.register === 0) {
+        //   this.obj.flag = 'emergency'
+      } else {
+        this.obj.flag = 'others'
+      }
+
+      this.registerdetailshow = true
+    },
+    // 查看基本信息
+    showBasicInfoModal (row, column, cell, event) {
+      // console.log(row, column, cell, '1231414')
+      if (column.property === 'name') {
+        this.patientId = row.patientId
+        this.showBasicInfo = true
+        // 还是强制刷新一下比较靠谱
+        this.$nextTick(_ => {
+          this.$refs.basicinfo.getUser()
+        })
+      }
+    },
+    basicInfoChange (val) {
+      this.basicInfo = val
+    },
+    saveBasicInfo () {
+      this.btnDisabled = true
+      this.$refs.basicinfo.$refs.form.$refs.form.validate(valid => {
+        if (valid) {
+          let params = Object.assign({}, this.basicInfo)
+          params.pregnant = Number(this.basicInfo.pregnant)
+          params.newWeight = Number(this.basicInfo.newWeight)
+          params.idens = this.basicInfo.iden
+          params.contactList.forEach((item, i) => {
+            // 如果contactList一行中所有字段都为空，前端过滤掉，如果有不为空的字段，后端会校验联系人类型，姓名，手机号
+            let flag = true
+            for (let property in item) {
+              if (property === 'address') {
+                let addressobj = JSON.parse(item[property])
+                for (let prop in addressobj) {
+                  if (addressobj[prop] !== '') {
+                    flag = false
+                    break
+                  }
+                }
+              } else if (property === 'otherType') {
+
+              } else if (item[property] !== '') {
+                flag = false
+                break
+              }
+            }
+            if (flag) {
+              params.contactList.splice(i, 1)
+            }
+          })
+          if (params.age < 14 && params.contactList.length < 1) {
+            this.$messageTips(this, 'error', '患者年龄小于14岁,需要填写联系人信息')
+            this.btnDisabled = false
+            return false
+          }
+          registerapi.createInpatientNumber(params).then(res => {
+            this.$messageTips(this, 'success', '基本信息保存成功')
+            this.btnDisabled = false
+            this.showBasicInfo = false
+          }).catch(() => {
+            this.btnDisabled = false
+          })
+        } else {
+          this.btnDisabled = false
+        }
+      })
+    },
+    handleModal () {
+      // 去掉外层模态框遮罩
+      let node = document.getElementsByClassName('v-modal')
+      if (node.length > 0) {
+        setTimeout(() => {
+          node[0].click()
+        })
+      }
+    },
+    handleSizeChange (pagesize) {
+      this.pagesize = pagesize
+      this.list()
+    },
+    handleCurrentChange (pageIndex) {
+      this.pageIndex = pageIndex
+      this.list()
+    },
+    formatterInhour (row) {
+      return row.inHour.toFixed(2)
+    }
+  }
+}
+</script>
+<style scoped>
+.layout_box .layout_inner {
+  margin-top: 5px;
+}
+.register {
+  background: white;
+  padding-top: 30px;
+  margin-top: 20px;
+  padding: 20px;
+}
+.el-form-item__content {
+  position: static;
+}
+.savebtn {
+  text-align: right;
+}
+.layout_box .layout_inner /deep/ .el-dialog__title {
+  color: #000;
+  font-weight: bold;
+}
+.layout_box .layout_inner /deep/ .el-dialog__body {
+  padding-top: 5px;
+  padding-bottom: 15px !important;
+}
+</style>
+

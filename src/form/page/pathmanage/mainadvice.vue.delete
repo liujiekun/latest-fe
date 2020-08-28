@@ -1,0 +1,126 @@
+<template>
+  <div class="main-advice-wrap">
+    <div class="advice-list">
+      <pathway-advice
+        ref="pathwayadvice"
+        :current-stage="currentStage"
+        :send-data="sendData"
+        :keyflag="keyflag"
+        @edit="editSendData"
+        @update="updateSendData"
+      ></pathway-advice>
+    </div>
+    <div class="set-advice" v-if="currentStage.id">
+      <prescription
+        ref="pres"
+        title="添加医嘱"
+        :visit-type.number="3"
+        :show-add="showAdd"
+        :init-data="waitSendData"
+        :callback-data="callbackData"
+        :user-info="baseInfo"
+        :is-pathway="true"
+        :is-add-tpl="false"
+        :search-type="1"
+        @change="showAddEvent"
+        @open="openAddEvent"
+        @submit="submitEvent"
+      ></prescription>
+    </div>
+  </div>
+</template>
+<script>
+import api from '@/form/store/pathmanage'
+import pathwayAdvice from './pathway.advice'
+import prescription from '@/inpatient/components/medical.orders/issued.orders'
+export default {
+  props: ['currentStage', 'keyflag'],
+  data () {
+    return {
+      api,
+      showAdd: false,
+      showAll: true,
+      waitSendData: [],
+      sendData: [],
+      stockData: [],
+      callbackData: [],
+      baseInfo: {}
+    }
+  },
+  watch: {
+  },
+  created () {
+  },
+  components: {
+    pathwayAdvice,
+    prescription
+  },
+  methods: {
+    findAdviceDtos (params) {
+    },
+    // 展开添加医嘱区域
+    showAddEvent () {
+      this.showAdd = !this.showAdd
+    },
+    // 展开开医嘱区域
+    openAddEvent () {
+      this.showAdd = true
+    },
+    // 提交成功回调
+    submitEvent (val, sendArr) {
+      let list = []
+      val.forEach(item => {
+        let flag = false
+        this.stockData.forEach(value => {
+          if (item.adviceId === value.adviceId) {
+            flag = true
+          }
+        })
+        if (!flag) {
+          if (typeof item.serviceItem === 'object') {
+            item.serviceItem = JSON.stringify(item.serviceItem)
+          }
+          if (typeof item.surgeryFreq === 'object') {
+            item.surgeryFreq = JSON.stringify(item.surgeryFreq)
+          }
+          if (typeof item.assistantItem === 'object') {
+            item.assistantItem = JSON.stringify(item.assistantItem)
+          }
+          list.push(item)
+        }
+      })
+      this.sendData = list
+      this.waitSendData = []
+    },
+    editSendData (data) {
+      this.callbackData = data
+    },
+    updateSendData (data) {
+      this.stockData = data
+    }
+  }
+}
+</script>
+<style lang="scss" scoped>
+.main-advice-wrap {
+  display: flex;
+  flex-direction: column;
+  .advice-list {
+    display: flex;
+    flex: 1;
+    min-height: 300px;
+    background: #fff;
+    border-radius: 4px;
+    position: relative;
+    margin: 0;
+  }
+  .set-advice {
+    background: #fff;
+    border-radius: 4px;
+    position: relative;
+    margin: 20px 0 0;
+    padding: 10px;
+    border-top: 1px solid #ccc;
+  }
+}
+</style>

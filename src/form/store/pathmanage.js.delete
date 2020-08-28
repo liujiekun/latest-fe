@@ -1,0 +1,149 @@
+import axios from '@/util/http'
+import { diction } from '@/store/common'
+const url = diction.api + '/clinical-pathway'
+var pathmanageapi = axios.create({
+  baseURL: url,
+  withCredentials: true
+})
+
+pathmanageapi.interceptors.response.use(function (response) {
+  if (response.data.head && response.data.head.errCode !== 0) {
+    return Promise.reject(response.data.head.errCode)
+  }
+  return response.data.data
+})
+
+// 获取路径列表
+function list (params) {
+  return pathmanageapi.post(url + '/clinicalPathway/getClinicalPathways', params)
+}
+
+// 路径列表启用/停用
+function updateClinicalPathwayStatus (params) {
+  return pathmanageapi.post(url + '/clinicalPathway/updateClinicalPathwayStatus', params)
+}
+
+// 路径列表删除
+function deleteClinicalPathway (params) {
+  return pathmanageapi.post(url + '/clinicalPathway/deleteClinicalPathwayById', params)
+}
+
+// 新增路径模版保存
+function createClinicalPathway (params) {
+  return pathmanageapi.post(url + '/clinicalPathway/createClinicalPathway', params)
+}
+
+// 查询路径详情
+function getClinicalPathway (params) {
+  return pathmanageapi.post(url + '/clinicalPathway/getClinicalPathway', params)
+}
+
+// 更新路径模版保存
+function updateClinicalPathway (params) {
+  return pathmanageapi.post(url + '/clinicalPathway/updateClinicalPathway', params)
+}
+
+// 查询阶段列表
+function getStageList (params) {
+  return pathmanageapi.post(url + '/stageObj/getStageObjs', params)
+}
+
+// 新增阶段保存
+function createStageObj (params) {
+  return pathmanageapi.post(url + '/stageObj/createStageObj', params)
+}
+
+// 查询阶段详情
+function getStageObj (params) {
+  return pathmanageapi.post(url + '/stageObj/getStageObj', params)
+}
+
+// 更新阶段保存
+function updateStageObj (params) {
+  return pathmanageapi.post(url + '/stageObj/updateStageObj', params)
+}
+
+// 删除阶段
+function deleteStageObj (params) {
+  return pathmanageapi.post(url + '/stageObj/removeStageObj', params)
+}
+
+// 查询护理工作列表
+function getNursingObjList (params) {
+  return pathmanageapi.post(url + '/nursingObj/getNursingObjList', params)
+}
+
+// 新增护理工作模版
+function createNursingObj (params) {
+  return pathmanageapi.post(url + '/nursingObj/createNursingObj', params)
+}
+
+// 修改护理工作模版
+function updateNursingObj (params) {
+  return pathmanageapi.post(url + '/nursingObj/updateNursingObj', params)
+}
+
+// 删除护理工作模版
+function deleteNursingObj (params) {
+  return pathmanageapi.post(url + '/nursingObj/removeNursingObj', params)
+}
+
+// 查询诊疗工作列表
+function getTreatmentObjList (params) {
+  return pathmanageapi.post(url + '/treatmentObj/getTreatmentObjList', params)
+}
+
+// 新增诊疗工作模版
+function createTreatmentObj (params) {
+  return pathmanageapi.post(url + '/treatmentObj/createTreatmentObj', params)
+}
+
+// 修改诊疗工作模版
+function updateTreatmentObj (params) {
+  return pathmanageapi.post(url + '/treatmentObj/updateTreatmentObj', params)
+}
+
+// 删除诊疗工作模版
+function deleteTreatmentObj (params) {
+  return pathmanageapi.post(url + '/treatmentObj/removeTreatmentObj', params)
+}
+
+// 获取主要医嘱列表
+function findAdviceDtos (params) {
+  return pathmanageapi.post(url + '/adviceController/findAdviceDtos', params)
+}
+
+// 保存主要医嘱列表
+function createAdvice (params) {
+  return pathmanageapi.post(url + '/adviceController/createAdvice', params)
+}
+
+// 查询临床路径主要医嘱列表
+function adviceInstanceList (params) {
+  return pathmanageapi.post(url + '/adviceInstance/search', params)
+}
+
+export default {
+  list,
+  updateClinicalPathwayStatus,
+  deleteClinicalPathway,
+  getClinicalPathway,
+  createClinicalPathway,
+  updateClinicalPathway,
+  getStageList,
+  createStageObj,
+  getStageObj,
+  updateStageObj,
+  deleteStageObj,
+  getNursingObjList,
+  createNursingObj,
+  updateNursingObj,
+  deleteNursingObj,
+  getTreatmentObjList,
+  createTreatmentObj,
+  updateTreatmentObj,
+  deleteTreatmentObj,
+  findAdviceDtos,
+  createAdvice,
+  adviceInstanceList
+}

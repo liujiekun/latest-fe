@@ -1,0 +1,264 @@
+<template>
+  <div>
+    <el-row>
+      <div
+        class="allStage"
+        :class="{'directoryActive': activeId === 'all'}"
+        @click="handleClick('all')"
+        v-if="stageData.length > 1"
+      >全部阶段</div>
+      <div
+        v-for="(item, key) in stageData"
+        :key="key"
+        class="directory cardlike"
+        @click="handleClick(item)"
+        :class="{'directoryActive': activeId === item.id}"
+      >
+        <div class="leftside">
+          <div>
+            <span class="Title">{{item.stageName}}</span>
+          </div>
+          <div>
+            <el-col :span="12">顺序: {{item.num}}</el-col>
+            <el-col :span="12">
+              时间:
+              <span v-if="item.dayType === 1">{{item.dayFrom}}</span>
+              <span v-if="item.dayType === 1">-</span>
+              <span>{{item.dayTo}}</span>
+              天
+            </el-col>
+          </div>
+        </div>
+        <div class="rightside">
+          <div class="iconContainer">
+            <i class="editicon iconfont icon-bianji" @click="stageEdit(item)" style="color:#bbb;"></i>
+            <ever-confirm :msg="'您确定要删除吗？'" @confirm="stageDelete(item, index)">
+              <template slot="reference">
+                <i class="editicon iconfont icon-sales-cuowu" style="color:#bbb;margin:0 5px;"></i>
+              </template>
+            </ever-confirm>
+          </div>
+        </div>
+      </div>
+    </el-row>
+    <ever-form2
+      :schema="querySchema"
+      v-model="queryObj"
+      :inline="false"
+      labelWidth="100px"
+      :nosubmit="true"
+      :rules="rules"
+      ref="form"
+      class="pathwayform"
+    >
+      <template slot="dayType">
+        <el-row :gutter="10">
+          <el-col :span="8" style="padding-left:0">
+            <el-select v-model="queryObj.dayType" clearable>
+              <el-option
+                v-for="(item, index) in typeOptions"
+                :key="index"
+                :value="item.id"
+                :label="item.name"
+              ></el-option>
+            </el-select>
+          </el-col>
+          <el-col :span="5" v-if="queryObj.dayType === 1">
+            <el-input v-model="queryObj.dayFrom"></el-input>
+          </el-col>
+          <el-col :span="2" v-if="queryObj.dayType === 1">—</el-col>
+          <el-col :span="5">
+            <el-input v-model="queryObj.dayTo"></el-input>
+          </el-col>
+          <el-col :span="2">天</el-col>
+        </el-row>
+      </template>
+    </ever-form2>
+    <div class="footerarea" style="text-align:right">
+      <el-button type="primary" @click="submitForm" :disabled="$route.params.id == 0">确定</el-button>
+      <el-button @click="cancelForm">取消</el-button>
+    </div>
+  </div>
+</template>
+<script>
+import api from '@/form/store/pathmanage'
+export default {
+  props: ['pathwayInfo'],
+  data () {
+    let querySchema = [
+      {
+        name: 'stageName',
+        label: '阶段名称',
+        props: {
+          placeholder: '请输入阶段名称'
+        }
+      },
+      {
+        name: 'num',
+        label: '顺序',
+        props: {
+          placeholder: '请输入顺序'
+        }
+      },
+      {
+        name: 'dayType',
+        label: '时间',
+        comp: 'custom'
+      }
+    ]
+    let queryObj = this.$ever.createObjFromSchema(querySchema)
+    return {
+      api,
+      querySchema,
+      queryObj,
+      stageData: [],
+      activeId: '',
+      typeOptions: [
+        { id: 1, name: '范围之间' },
+        { id: 2, name: '最大' }
+      ],
+      rules: {
+        stageName: [
+          { required: true, message: '必填项', trigger: 'blur' }
+        ],
+        num: [
+          { required: true, message: '必填项', trigger: 'blur' }
+        ]
+      }
+    }
+  },
+  watch: {
+    'pathwayInfo' (val) {
+      this.getStageList()
+    }
+  },
+  create () {
+  },
+  components: {
+  },
+  methods: {
+    handleClick (item) {
+      if (item === 'all') {
+        this.activeId = item
+        this.$emit('handle', this.stageData)
+      } else {
+        this.activeId = item.id
+        this.$emit('handle', item)
+      }
+    },
+    async getStageList () {
+      let params = {
+        pathwayId: this.pathwayInfo.id
+      }
+      let result = await api.getStageList(params)
+      if (result) {
+        this.stageData = result
+      }
+    },
+    submitForm () {
+      this.$refs.form.$refs.form.validate(valid => {
+        if (valid) {
+          this.queryObj.pathwayId = this.pathwayInfo.id
+          this.queryObj.pathwayName = this.pathwayInfo.pathwayName
+          if (this.queryObj.id) {
+            api.updateStageObj(this.queryObj).then(res => {
+              if (res) {
+                this.getStageList()
+                this.$messageTips(this, 'success', '编辑成功', '提示')
+                this.cancelForm()
+              }
+            })
+          } else {
+            api.createStageObj(this.queryObj).then(res => {
+              if (res) {
+                this.getStageList()
+                this.$messageTips(this, 'success', '保存成功', '提示')
+                this.cancelForm()
+              }
+            })
+          }
+        }
+      })
+    },
+    cancelForm () {
+      this.queryObj.id = ''
+      this.queryObj.stageName = ''
+      this.queryObj.num = ''
+      this.queryObj.dayType = ''
+      this.queryObj.dayFrom = ''
+      this.queryObj.dayTo = ''
+    },
+    stageEdit (item) {
+      let params = {
+        id: item.id
+      }
+      api.getStageObj(params).then(result => {
+        if (result) {
+          this.queryObj = result
+        }
+      })
+    },
+    stageDelete (item) {
+      let params = {
+        id: item.id
+      }
+      api.deleteStageObj(params).then(result => {
+        if (result) {
+          this.$messageTips(this, 'success', '删除成功', '提示')
+          this.getStageList()
+          this.cancelForm()
+        }
+      })
+    }
+  }
+}
+</script>
+<style lang="scss" scoped>
+</style>
+<style lang="scss">
+.allStage {
+  height: 40px;
+  line-height: 40px;
+  color: #303133;
+  border: 1px solid #ebeef5;
+  margin-bottom: 12px;
+  font-size: 14px;
+  letter-spacing: 1px;
+  padding: 12px;
+  border-radius: 4px;
+}
+.directoryActive {
+  background-color: #eaf2fc !important;
+  border: 1px solid #1c7bef !important;
+}
+.cardlike {
+  border-radius: 4px;
+  border: 1px solid #ebeef5;
+  background-color: #fff;
+  overflow: hidden;
+  color: #303133;
+  transition: 0.3s;
+  margin-bottom: 12px;
+  padding: 12px;
+  .leftside {
+    float: left;
+    width: 80%;
+    .Title {
+      font-size: 15px;
+      font-weight: bold;
+    }
+    .iconContainer {
+      vertical-align: middle;
+      .editicon {
+        cursor: pointer;
+      }
+    }
+  }
+  .rightside {
+    float: right;
+    width: 20%;
+    text-align: right;
+    line-height: 50px;
+  }
+}
+</style>

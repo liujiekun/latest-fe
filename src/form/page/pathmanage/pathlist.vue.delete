@@ -1,0 +1,325 @@
+<template>
+  <div class="pathList layout_inner">
+    <div class="main-head">
+      <el-row>
+        <el-col :span="20">
+          <ever-form2
+            :schema="querySchema"
+            v-model="queryObj"
+            :inline="true"
+            :is-query="true"
+            @query="queryList"
+            class="pathwayform"
+          >
+            <template slot="diagnosisIds">
+              <el-select
+                v-model="queryObj.diagnosisIds"
+                placeholder="请输入诊断名称"
+                filterable
+                multiple
+                remote
+                reserve-keyword
+                :multiple-limit="20"
+                :remote-method="remoteMethod"
+                :loading="loading"
+              >
+                <el-option
+                  v-for="item in disOptions"
+                  :key="item.value"
+                  :label="item.label"
+                  :value="item.value"
+                ></el-option>
+              </el-select>
+            </template>
+          </ever-form2>
+        </el-col>
+        <el-col :span="4" class="alg_r" style="border-bottom: 1px solid #eee;height:56px">
+          <router-link :to="'/resident/pathcreate/0'">
+            <el-button type="primary">新建路径</el-button>
+          </router-link>
+        </el-col>
+      </el-row>
+    </div>
+    <div class="main-wrap">
+      <el-table v-loading.body="loading" :data="tableData" style="width: 100%" border>
+        <el-table-column width="200" label="路径名称">
+          <template slot-scope="scope">
+            <router-link :to="'/resident/pathcreate/' + scope.row.id">{{scope.row.pathwayName}}</router-link>
+          </template>
+        </el-table-column>
+        <el-table-column width="200" label="所属科室">
+          <template slot-scope="scope">
+            <span v-for="(item,index) in scope.row.providerList">
+              {{item.providerName}}
+              <span v-if="index < scope.row.providerList.length - 1">，</span>
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="关联诊断">
+          <template slot-scope="scope">
+            <span v-for="(item,index) in scope.row.diagnosisList">
+              {{item.diagnosisName}}
+              <span v-if="index < scope.row.diagnosisList.length - 1">，</span>
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="标准住院日" width="150" prop="doctorName">
+          <template slot-scope="scope">
+            <span v-if="scope.row.hospitalDayTo || scope.row.hospitalDayFrom">
+              <span v-for="(item,index) in typeOptions">
+                <span
+                  v-if="scope.row.hospitalDayType === item.id && scope.row.hospitalDayType !== 1"
+                >{{item.name}} {{scope.row.hospitalDayTo}} 天</span>
+                <span
+                  v-if="scope.row.hospitalDayType === item.id && scope.row.hospitalDayType === 1"
+                >{{scope.row.hospitalDayFrom}} - {{scope.row.hospitalDayTo}} 天</span>
+              </span>
+            </span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="sex" width="120" label="性别">
+          <template slot-scope="scope">
+            <span v-if="scope.row.sex">
+              <sys-value type="GBT.2261.1" :code="scope.row.sex + ''"></sys-value>
+            </span>
+            <span v-else>不限</span>
+          </template>
+        </el-table-column>
+        <el-table-column width="150" label="费用">
+          <template slot-scope="scope">
+            <span v-if="scope.row.standardFeeFrom || scope.row.standardFeeTo">
+              <span>{{scope.row.standardFeeFrom}} - {{scope.row.standardFeeTo}} 元</span>
+            </span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column width="120" label="年龄">
+          <template slot-scope="scope">
+            <span v-if="scope.row.ageFrom || scope.row.ageTo">
+              <span>{{scope.row.ageFrom}} - {{scope.row.ageTo}} 岁</span>
+            </span>
+            <span v-else>--</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="creatorName" width="200" label="创建人"></el-table-column>
+        <el-table-column prop="createTime" width="200" label="创建时间">
+          <template
+            slot-scope="scope"
+          >{{scope.row.createTime ? $moment(scope.row.createTime).format('YYYY/MM/DD HH:mm:ss') : ''}}</template>
+        </el-table-column>
+        <el-table-column fixed="right" label="操作" width="200">
+          <template slot-scope="scope">
+            <ever-confirm
+              :msg="'您确定要启用该路径吗？'"
+              action="启用路径"
+              @confirm="updateClinicalPathwayStatus(scope.row, scope.$index, '1')"
+              v-if="scope.row.status === 0"
+            >
+              <template slot="reference">
+                <el-button
+                  type="primary"
+                  size="small"
+                  style="margin-left:0;margin-right:5px;"
+                  v-if="scope.row.status === 0"
+                >启用</el-button>
+              </template>
+            </ever-confirm>
+            <ever-confirm
+              :msg="'您确定要停用该路径吗？'"
+              action="停用路径"
+              @confirm="updateClinicalPathwayStatus(scope.row, scope.$index, '0')"
+              v-if="scope.row.status === 1"
+            >
+              <template slot="reference">
+                <el-button
+                  type="primary"
+                  size="small"
+                  style="margin-left:0;margin-right:5px;"
+                  v-if="scope.row.status === 1"
+                >停用</el-button>
+              </template>
+            </ever-confirm>
+            <ever-confirm
+              :msg="'您确定要删除该路径吗？'"
+              action="删除路径"
+              @confirm="deleteClinicalPathway(scope.row, scope.$index)"
+            >
+              <template slot="reference">
+                <el-button type="primary" size="small" style="margin-left:0;margin-right:5px;">删除</el-button>
+              </template>
+            </ever-confirm>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-row type="flex" justify="end">
+        <ever-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :totalCount="totalCount"
+          :current="current"
+        ></ever-pagination>
+      </el-row>
+    </div>
+  </div>
+</template>
+<script>
+import api from '@/form/store/pathmanage'
+import fapi from '@/crm/store/healthy/followapi'
+import selectInquireList from '@/warehouse/util/selectinquirelist'
+import packageapi from '@/card/store/packagemanagement/api'
+import list from '@/util/list'
+export default {
+  mixins: [list],
+  data () {
+    let querySchema = [
+      {
+        name: 'orgId',
+        label: '适用机构',
+        comp: 'sys-select',
+        props: {
+          options: []
+        }
+      },
+      {
+        name: 'providerIds',
+        label: '所属科室',
+        comp: 'sys-select',
+        props: {
+          options: [],
+          field: {
+            multiple: true
+          }
+        }
+      },
+      {
+        name: 'pathwayName',
+        label: '路径名称',
+        props: {
+          placeholder: '请输入路径名称'
+        }
+      },
+      {
+        name: 'diagnosisIds',
+        label: '诊断',
+        comp: 'custom'
+      }
+    ]
+    let queryObj = this.$ever.createObjFromSchema(querySchema)
+    queryObj.providerIds = []
+    queryObj.diagnosisIds = []
+    return {
+      api,
+      querySchema,
+      queryObj,
+      disOptions: [],
+      typeOptions: [
+        { id: 0, name: '小于等于' },
+        { id: 1, name: '范围之间' },
+        { id: 2, name: '等于' }
+      ]
+    }
+  },
+  watch: {
+    'queryObj.orgId' (val) {
+      if (val) {
+        let params = { clinicId: val.id }
+        packageapi.getDptsByOrgId(params).then(result => {
+          if (result.data && result.data.length) {
+            this.$ever.getFieldFromSchema(this.querySchema, 'providerIds').props.options = result.data
+          }
+        })
+      } else {
+        this.$ever.getFieldFromSchema(this.querySchema, 'providerIds').props.options = []
+      }
+    }
+  },
+  components: {
+  },
+  created () {
+    // 获取集团旗下所有机构
+    selectInquireList.methods._clinicSelect().then(res => {
+      this.$ever.getFieldFromSchema(this.querySchema, 'orgId').props.options = res
+    })
+  },
+  methods: {
+    remoteMethod (query) {
+      if (query !== '') {
+        let list = []
+        fapi.diseaseSearch({
+          'type': 2,
+          'name': query
+        }).then(rs => {
+          if (rs.head.errCode === 0) {
+            list = rs.data.resultList.map(item => {
+              return { label: item.diseaseCode + '_' + item.diseaseName, value: item.diseaseCode }
+            })
+            this.disOptions = list
+          }
+        })
+        setTimeout(() => {
+          this.disOptions = list.filter(item => {
+            return item.label.toLowerCase().indexOf(query.toLowerCase()) > -1
+          })
+        }, 200)
+      } else {
+        this.disOptions = []
+      }
+    },
+    queryList () {
+      this.queryObj.delFlag = 0
+      this.list()
+    },
+    async updateClinicalPathwayStatus (item, index, flag) {
+      let params = {
+        id: item.id,
+        status: flag
+      }
+      let result = await api.updateClinicalPathwayStatus(params)
+      if (result) {
+        this.tableData[index].status = Number(flag)
+        this.$messageTips(this, 'success', Number(flag) ? '启用' : '停用' + '成功', '提示')
+      }
+    },
+    async deleteClinicalPathway (item, index) {
+      let params = {
+        id: item.id
+      }
+      let result = await api.deleteClinicalPathway(params)
+      if (result) {
+        this.list()
+        this.$messageTips(this, 'success', '删除成功', '提示')
+      }
+    }
+  }
+}
+</script>
+<style lang="scss" scoped>
+.pathList {
+  min-height: 800px;
+  padding: 15px;
+}
+</style>
+<style  lang="scss">
+.pathwayform {
+  .el-button--default {
+    margin-left: 160%;
+  }
+  .el-table {
+    margin-top: 0;
+  }
+  #zhenduan-war {
+    .el-col-12 {
+      width: 100% !important;
+    }
+    .el-form {
+      .el-row:last-child {
+        .el-form-item {
+          margin-bottom: 0 !important;
+        }
+      }
+    }
+  }
+}
+</style>
+

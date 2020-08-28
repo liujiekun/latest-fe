@@ -1,0 +1,42 @@
+<template>
+  <div>
+    <ever-bread-crumb name="返回" path="/manages/material" :showTitle="true"></ever-bread-crumb>
+    <div class="layout_inner">
+      <h3 class="title">物资-机构属性字段配置</h3>
+      <!-- {{tableData}} -->
+      <configure-comp
+        :dictionary="DICTIONARY"
+        v-model="tableData"
+        :first-column="FIRSTCOLUMN">
+      </configure-comp>
+    </div>
+  </div>
+</template>
+
+<script>
+import ConfigureComp from '@/manages/components/configure.comp'
+const DICTIONARY = [
+  { type: 1, name: '售价' },
+  { type: 2, name: '状态' }
+] // 数据字典项
+const FIRSTCOLUMN = { // 表格第一列展示标题和字段名称
+  prop: 'name',
+  label: '管理字段'
+}
+export default {
+  data () {
+    return {
+      DICTIONARY,
+      FIRSTCOLUMN,
+      tableData: []
+    }
+  },
+  components: {
+    ConfigureComp
+  }
+}
+</script>
+
+<style lang="scss" scoped>
+
+</style>

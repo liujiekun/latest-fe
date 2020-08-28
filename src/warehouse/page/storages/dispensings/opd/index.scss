@@ -1,0 +1,313 @@
+@import '../../../assets/base.scss';
+
+@mixin shadow_radius {
+  border-radius: 3px;
+  box-shadow:0 0 5px rgba(0,0,0,.1);
+}
+
+@mixin bg_green {
+  border: 1px solid $blue_color;
+  box-shadow: $blue_color 0 0 10px inset;
+}
+
+#opd {
+  .prescription_pagination {
+    button {
+      color: $blue_color
+    }
+    button:disabled {
+      color: #c0c4cc
+    }
+  }
+  .searchClassName {
+    width: 40%!important;
+    margin: 0!important;
+    padding-top: 0!important;
+  }
+  .f12 {
+    &.iconfont {
+      font-size: 12px;
+    }
+  }
+  .red {
+    color: $red_color
+  }
+  .doctor-info {
+    padding: 5px 15px;
+  }
+  .custom-search-component {
+    padding: 10px 0;
+    box-sizing: border-box;
+    text-align: center;
+    margin: 0 auto;
+    width: 50%;
+  }
+  .inner {
+    .patient_prescription {
+      .patient_title {
+        .opabsolute {
+          position: absolute;
+          right: 0px
+        }
+      }
+      .patient_list {
+        padding: 15px;
+        padding-bottom: 0px;
+        background: #fff;
+        margin-bottom: 15px;
+        &.select {
+          @include bg_green
+        }
+        &:first-child {margin-top: 0;}
+        /deep/ tr th {
+          .cell {
+            background: none;
+          }
+          background: $gray2_color;
+          padding: 5px 0!important;
+        }
+        /deep/ tr td {
+          padding: 5px 0!important;
+          background: $gray2_color;
+        }
+        .patient_box {
+          .el-table {
+            margin: 0;
+            width: 100%
+          }
+          .table_title {
+            margin-top: 10px;
+            line-height: 36px;
+          }
+        }
+      }
+      .patient_footer {
+        text-align: center;
+        padding: 10px 0;
+      }
+      .patient_btn_width {
+        width: 140px
+      }
+    }
+  }
+  .dispense_container {
+    margin-top: 5px;
+    .pr-l {
+      @include shadow_radius;
+      width: 310px;
+      background-color: $white_color;
+      position: relative;
+      z-index: 4;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      transition: width 0.3s;
+      .pos_ab {
+        right: 10px;
+        top: 10px;
+        z-index: 6;
+        i {
+          font-size: 12px;
+        }
+        .i-zhankai {
+          transform: rotate(180deg);
+        }
+      }
+      .i-zhankai {
+        transform: rotate(180deg);
+      }
+      .dispense_pad {
+        padding: 8px 15px;
+      }
+      .dispense_tabs {
+        margin: 0;
+        margin-top: 8px;
+        padding: 0 25px;
+        border-bottom: 1px solid #ccc;
+        li {
+          float: left;
+          width: 50%;
+          height: 40px;
+          line-height: 40px;
+          text-align: center;
+          cursor: pointer;
+          font-weight: bold;
+          &.is-active {
+            border-radius: 5px 5px 0 0;
+            color: $blue_color;
+            border-bottom: 2px solid $blue_color;
+          }
+          .red {
+            color: $red_color;
+            padding-left: 10px
+          }
+        }
+      }
+      .el-pagination {
+        text-align: center;
+      }
+      .dispense_footer {
+        width: 100%;
+        text-align: center;
+        height: 40px;
+        @include shadow_radius();
+        line-height: 40px;
+        border-top: 1px solid $gray_color;
+        background-color: $white_color;
+        z-index: 1;
+      }
+    }
+    .pr-l-w {
+      width: 469px;
+      z-index: 104;
+    }
+    .pr-l-w2 {
+      width: 760px;
+      z-index: 104;
+    }
+    .pr-r {
+      width: calc(100vw - 342px);
+      height: calc(100vh - 155px);
+      overflow: hidden;
+      position: absolute;
+      left: 322px;
+      top: 0;
+      z-index: 103;
+      .patient_prescription {
+        overflow-y: auto;
+        .patient_title {
+          .opabsolute {
+            position: absolute;
+            right: 0px;
+            text-align: right;
+          }
+        }
+        .patient_info {
+          &.danger {
+            background: $warnColor;
+          }
+        }
+        .patient_list {
+          padding: 15px;
+          padding-bottom: 0px;
+          border: none;
+          background: #fff;
+          /deep/ tr th {
+            .cell {
+              background: none;
+            }
+            background: $gray2_color;
+            padding: 5px 0!important;
+          }
+          /deep/ tr td {
+            padding: 5px 0!important;
+            background: $gray2_color;
+          }
+          .table_title {
+            margin-top: 10px;
+            line-height: 36px;
+          }
+        }
+        .patient_footer {
+          width: calc(100vw - 372px);
+          background: $white_color;
+          position: fixed;
+          z-index: 5;
+          bottom: 10px;
+          text-align: center;
+          padding: 10px 0;
+          left: 332px;
+        }
+        .patient_btn_width {
+          width: 140px
+        }
+      }
+    }
+    .patient_prescription {
+      height: calc(100vh - 320px);
+      margin-top: 10px;
+      overflow-y: auto;
+      .patient_title {
+        .opabsolute {
+          position: absolute;
+        }
+      }
+      .patient_list {
+        background: #fff;
+        padding: 15px;
+        padding-bottom: 0px;
+        &.select {
+          @include bg_green
+        }
+        /deep/ tr th {
+          .cell {
+            background: none;
+          }
+          background: $gray2_color;
+          padding: 5px 0!important;
+        }
+        /deep/ tr td {
+          padding: 5px 0!important;
+          background: $gray2_color;
+        }
+        .table_title {
+          margin-top: 10px;
+          line-height: 36px;
+        }
+        .el-table {
+          margin: 0;
+          width: 100%
+        }
+      }
+      .patient_footer {
+        width: calc(100% - 20px);
+        background: $white_color;
+        position: fixed;
+        z-index: 5;
+        bottom: 10px;
+        text-align: center;
+        padding: 10px 0;
+        left: 10px;
+      }
+      .patient_btn_width {
+        width: 140px
+      }
+    }
+    .pr-r .noscroll {
+      overflow-y: hidden;
+      margin-top: 0;
+      height: auto;
+      .patient_footer{
+        position: initial;
+      }
+    }
+  }
+}
+
+.design_table {
+  /deep/ tr th {
+    .cell {
+      background: none;
+    }
+    background: $gray2_color!important;
+    padding: 5px 0!important;
+  }
+  /deep/ tr td {
+    padding: 5px 0!important;
+    // background: $gray2_color!important;
+  }
+}
+.tcm-template {
+  &.select {
+    background: $gray2_color!important;
+  }
+}
+
+.design_error_table {
+  /deep/ tr th {
+    background: $col_error!important;
+  }
+  /deep/ tr td {
+    background: $col_error!important;
+  }
+}

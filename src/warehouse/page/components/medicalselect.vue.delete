@@ -1,0 +1,88 @@
+<template>
+  <span>
+    <el-select
+      v-model="medicalselect"
+      :placeholder="placeholder"
+      :size="size"
+      :clearable="clearable ? true : false"
+      :style="{width: width ? width:'100%'}"
+      :disabled="disabled"
+      :no-data-text="nodatatext"
+      :filterable="filterable"
+      :needObjFlag="false"
+      :default-first-option="true"
+      :allow-create="allowCreate"
+      @visible-change="visibleChange"
+      @change="change"
+      @clear="clear"
+      :value-key="needObjFlag ? 'id' : 'value'"
+      v-bind="{'multiple': multiple ? true : false}">
+      <el-option
+        v-for="option in computeOptions"
+        :key="option.id"
+        :label="customValue ? option[customValue] : option.name"
+        :disabled="option.disabled"
+        :value="needObjFlag ? option : customValue ? option[customValue] : option.id">
+      </el-option>
+    </el-select>
+  </span>
+</template>
+
+<script>
+import clinicApi from '@/warehouse/store/clinicapi'
+export default {
+  props: ['value', 'size', 'disabled', 'placeholder', 'multiple', 'filterable', 'needObjFlag', 'clearable', 'nodatatext', 'width', 'allowCreate', 'disabledOptions', 'customValue', 'index'],
+  data () {
+    return {
+      innerOptions: null,
+      options: []
+    }
+  },
+  created () {
+    clinicApi.list().then(res => {
+      this.options = res
+    })
+  },
+  methods: {
+    change (v) {
+      if (!v) return
+      this.$emit('change', v, this.index)
+    },
+    visibleChange (v) {
+      this.$emit('visibleChange', v, this.index)
+    },
+    clear (v) {
+      this.$emit('clear', v, this.index)
+    }
+  },
+  computed: {
+    medicalselect: {
+      set (newVal) {
+        this.$emit('input', newVal)
+        this.$emit('change', newVal)
+      },
+      get () {
+        return this.value || this.value === '' ? this.value : ''
+      }
+    },
+    computeOptions () {
+      let options = this.innerOptions || this.options
+      if (!options) {
+        return []
+      }
+      return options.map(option => {
+        if (!this.disabledOptions) {
+          return option
+        }
+        let disabled = this.disabledOptions.filter(v => {
+          return v.id === option.id
+        })
+        if (disabled.length) {
+          option.disabled = true
+        }
+        return option
+      })
+    }
+  }
+}
+</script>

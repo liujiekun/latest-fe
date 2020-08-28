@@ -1,0 +1,387 @@
+<template>
+  <div>
+    <ever-bread-crumb
+      :name="currentTitle ? currentTitle : '新增路径'"
+      show-edit-fnt="false"
+      :have-return="true"
+    ></ever-bread-crumb>
+    <el-row type="flex" class="main_body">
+      <el-col class="templet_wrap">
+        <el-collapse v-model="activeNames">
+          <el-collapse-item name="1">
+            <template slot="title">
+              <div class="header">
+                <strong class="title">路径信息</strong>
+              </div>
+            </template>
+            <div>
+              <create-pathway
+                @success="createPathwaySuccess"
+                @edit="getPathwayData"
+                :key="$route.params.id"
+                @get-title="getCurrentTitle"
+                :id="$route.params.id"
+              ></create-pathway>
+            </div>
+          </el-collapse-item>
+          <el-collapse-item name="2">
+            <template slot="title">
+              <div class="header">
+                <strong class="title">阶段</strong>
+              </div>
+            </template>
+            <div>
+              <create-stage @handle="handleStage" :pathway-info="pathwayInfo"></create-stage>
+            </div>
+          </el-collapse-item>
+        </el-collapse>
+      </el-col>
+      <!-- <el-col class="center">
+        <ul>
+          <li @click="ToggleShow">
+            <i class="iconfont icon-bianji"></i>
+            <label>引用</label>
+          </li>
+        </ul>
+      </el-col>-->
+      <el-col class="advice_wrap">
+        <el-tabs v-model="tabs" @tab-click="handleClick">
+          <el-tab-pane label="主要医嘱" name="first"></el-tab-pane>
+          <el-tab-pane label="诊疗工作" name="second"></el-tab-pane>
+          <el-tab-pane label="护理工作" name="third"></el-tab-pane>
+        </el-tabs>
+        <main-advice v-if="tabs === 'first'" :current-stage="stageInfo" :keyflag="keys"></main-advice>
+        <div class="zlandhl" v-if="tabs == 'second' || tabs == 'third'">
+          <!-- <div v-for="(list, key) in workList" :key="key"> -->
+          <el-row v-for="(item,index) in workList" :key="index" style="lineHeight:45px">
+            <el-col :span="2">
+              <el-checkbox v-model="item.mustSelectFlag" label="必选"></el-checkbox>
+            </el-col>
+            <el-col :span="2">{{item.stageName}}</el-col>
+            <el-col :span="12">
+              <el-input v-model="item.workContent"></el-input>
+            </el-col>
+            <el-col :span="2" align="center">
+              <el-button @click="saveWorks(item)">保存</el-button>
+            </el-col>
+            <el-col :offset="0" :span="5">
+              <span v-if="workList.length > 1 || workList.length === 1 && item.id">
+                <i class="icon iconfont icon-delete" @click="delWork(item, index)"></i>
+                &nbsp;&nbsp;&nbsp;&nbsp;
+              </span>
+              <i class="icon iconfont icon-tianjia" @click="insertWork(item, index)"></i>
+            </el-col>
+          </el-row>
+          <!-- </div> -->
+          <!-- <el-row style='lineHeight:45px;margin-top:10px;'>
+            <el-col :offset='15' :span='8'><el-button type="primary" @click='savenursing'>保存</el-button></el-col>
+          </el-row>-->
+        </div>
+      </el-col>
+    </el-row>
+  </div>
+</template>
+<script>
+import api from '@/form/store/pathmanage'
+import createPathway from './createpathway'
+import createStage from './createstage'
+import mainAdvice from './mainadvice'
+import { compare } from '@/util/common'
+export default {
+  data () {
+    return {
+      api,
+      activeNames: ['1'],
+      pathwayInfo: {},
+      tabs: 'first',
+      currentTitle: '',
+      currentStage: '',
+      stageInfo: '',
+      workList: [],
+      keys: 0
+    }
+  },
+  watch: {
+    'currentStage' (val) {
+      this.stageInfo = val
+    }
+  },
+  created () {
+    this.handleCollapse(1) // 默认打开第一个
+  },
+  computed: {
+  },
+  components: {
+    createPathway,
+    createStage,
+    mainAdvice
+  },
+  methods: {
+    isAdd (item, index) {
+      if (!index) {
+        return true
+      } else {
+        return item.stageId !== this.workList[index - 1].stageId
+      }
+    },
+    handleCollapse (item) {
+      switch (item) {
+        case 0: // 0全关
+          this.activeNames = [1]
+          break
+        case 1: // 1打开 2关闭
+          this.activeNames = [1, '1']
+          break
+        case 2: // 1关闭 2打开
+          this.activeNames = [1, '2']
+          break
+        case 3: // 3全开
+          this.activeNames = [1, '1']
+          break
+      }
+    },
+    // 新建模版保存成功回调，关闭路径信息，打开阶段
+    createPathwaySuccess (val) {
+      this.pathwayInfo = val
+      this.handleCollapse(2)
+      this.$router.replace({
+        path: '/resident/pathcreate/' + val.id
+      })
+    },
+    getPathwayData (val) {
+      this.pathwayInfo = val
+    },
+    // 编辑模版情况下,bread-crumb显示当前路径名称
+    getCurrentTitle (val) {
+      this.currentTitle = val
+    },
+    // 点击阶段,获取右侧列表
+    handleStage (val) {
+      this.currentStage = val
+      this.handleClick()
+    },
+    // 查询护理工作列表
+    async getNursingObjList () {
+      this.workList = []
+      let params = {}
+      if (!this.currentStage) {
+        return false
+      }
+      if (!Array.isArray(this.currentStage) && this.currentStage) {    // 查询单独阶段
+        if (this.currentStage.id) {
+          params.stageId = this.currentStage.id
+        } else {
+          this.workList = []
+          return false
+        }
+      } else if (Array.isArray(this.currentStage)) {     // 查询全部阶段
+        params.pathwayId = this.currentStage[0].pathwayId
+      }
+      let result = await api.getNursingObjList(params)
+      if (result && result.length) {
+        result.sort(compare('stageId'))
+        result.forEach(item => {
+          item.mustSelectFlag = item.mustSelectFlag === 1
+          item.workContent = item.nursingContent
+        })
+        this.workList = result
+      } else {
+        let temp = {
+          mustSelectFlag: false,
+          workContent: ''
+        }
+        if (!Array.isArray(this.currentStage) && this.currentStage) {    // 查询单独阶段
+          this.workList = [Object.assign({}, this.currentStage, temp)]
+        } else if (Array.isArray(this.currentStage)) {     // 查询全部阶段
+          this.currentStage.forEach(item => {
+            this.workList.push(Object.assign({}, item, temp))
+          })
+        }
+        this.workList.forEach(item => {
+          item.stageId = item.id
+          delete item.id
+        })
+      }
+    },
+    // 查询诊疗工作列表
+    async getTreatmentObjList () {
+      this.workList = []
+      let params = {}
+      if (!this.currentStage) {
+        return false
+      }
+      if (!Array.isArray(this.currentStage) && this.currentStage) {    // 查询单独阶段
+        if (this.currentStage.id) {
+          params.stageId = this.currentStage.id
+        } else {
+          this.workList = []
+          return false
+        }
+      } else if (Array.isArray(this.currentStage)) {     // 查询全部阶段
+        params.pathwayId = this.currentStage[0].pathwayId
+      }
+      let result = await api.getTreatmentObjList(params)
+      if (result && result.length) {
+        result.sort(compare('stageId'))
+        result.forEach(item => {
+          item.mustSelectFlag = item.mustSelectFlag === 1
+          item.workContent = item.treatmentContent
+        })
+        this.workList = result
+      } else {
+        let temp = {
+          mustSelectFlag: false,
+          workContent: ''
+        }
+        if (!Array.isArray(this.currentStage) && this.currentStage) {    // 查询单独阶段
+          this.workList = [Object.assign({}, this.currentStage, temp)]
+        } else if (Array.isArray(this.currentStage)) {     // 查询全部阶段
+          this.currentStage.forEach(item => {
+            this.workList.push(Object.assign({}, item, temp))
+          })
+        }
+        this.workList.forEach(item => {
+          item.stageId = item.id
+          delete item.id
+        })
+      }
+    },
+    handleClick () {
+      if (this.tabs === 'first') {
+        this.keys++
+      } else if (this.tabs === 'second') {
+        this.workList = []
+        this.getTreatmentObjList()
+      } else if (this.tabs === 'third') {
+        this.workList = []
+        this.getNursingObjList()
+      }
+    },
+    // 添加
+    insertWork (item, index) {
+      let temp = {
+        mustSelectFlag: false,
+        workContent: '',
+        stageId: item.stageId,
+        stageName: item.stageName
+      }
+      this.workList.splice(index + 1, 0, temp)
+    },
+    // 删除
+    delWork (item, index) {
+      // 未保存的,不掉接口,直接删除
+      if (!item.id) {
+        this.workList.splice(index, 1)
+        return false
+      }
+      if (this.tabs === 'second') {   // 诊疗
+        api.deleteTreatmentObj({ id: item.id }).then(res => {
+          if (res) {
+            this.$messageTips(this, 'success', '删除成功', '提示')
+            if (this.workList.length === 1) {
+              this.workList[index].workContent = ''
+            } else {
+              this.workList.splice(index, 1)
+            }
+          }
+        })
+      } else if (this.tabs === 'third') {    // 护理
+        api.deleteNursingObj({ id: item.id }).then(res => {
+          if (res) {
+            this.$messageTips(this, 'success', '删除成功', '提示')
+            if (this.workList.length === 1) {
+              this.workList[index].workContent = ''
+            } else {
+              this.workList.splice(index, 1)
+            }
+          }
+        })
+      }
+    },
+    // 保存
+    saveWorks (item, index) {
+      if (this.tabs === 'second') {  // 诊疗
+        let params1 = {
+          treatmentContent: item.workContent,
+          mustSelectFlag: item.mustSelectFlag ? 1 : 0,
+          stageId: item.stageId
+        }
+        if (item.id) { // 编辑保存
+          params1.id = item.id
+          api.updateTreatmentObj(params1).then(result => {
+            if (result) {
+              this.$messageTips(this, 'success', '保存成功', '提示')
+              this.getTreatmentObjList()
+            }
+          })
+        } else {   // 新增保存
+          params1.mustSelectFlag = 1
+          api.createTreatmentObj(params1).then(result => {
+            if (result) {
+              this.$messageTips(this, 'success', '保存成功', '提示')
+              this.getTreatmentObjList()
+            }
+          })
+        }
+      } else if (this.tabs === 'third') {    // 护理
+        let params1 = {
+          nursingContent: item.workContent,
+          mustSelectFlag: item.mustSelectFlag ? 1 : 0,
+          stageId: item.stageId
+        }
+        if (item.id) { // 编辑保存
+          params1.id = item.id
+          api.updateNursingObj(params1).then(result => {
+            if (result) {
+              this.$messageTips(this, 'success', '保存成功', '提示')
+              this.getNursingObjList()
+            }
+          })
+        } else {   // 新增保存
+          params1.mustSelectFlag = 1
+          api.createNursingObj(params1).then(result => {
+            if (result) {
+              this.$messageTips(this, 'success', '保存成功', '提示')
+              this.getNursingObjList()
+            }
+          })
+        }
+      }
+    }
+  }
+}
+</script>
+<style lang="scss" scoped>
+.main_body {
+  .templet_wrap {
+    height: calc(100vh - 95px);
+    position: relative;
+    width: 610px;
+    overflow: auto;
+    background: #fff;
+    padding: 10px;
+    border-radius: 3px;
+    /deep/.el-collapse {
+      border-top: none;
+      /deep/.el-collapse-item__header {
+        /deep/.title {
+          padding-left: 6px;
+          border-left: 3px solid #1c7bef;
+          font-size: 14px;
+          color: #000;
+          line-height: 36px;
+        }
+      }
+    }
+  }
+  .advice_wrap {
+    height: calc(100vh - 95px);
+    overflow: auto;
+    position: relative;
+    background: #fff;
+    padding: 12px;
+    border-radius: 3px;
+    margin-left: 15px;
+  }
+}
+</style>

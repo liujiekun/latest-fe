@@ -1,0 +1,554 @@
+import Group from '@/warehouse/page/group/groupcenter.vue'
+import Welcome from '@/login/page/welcome'
+
+// 物资
+import HandleBusinessList from '@/warehouse/page/groupmaterial/handlebusinesslist'
+import MaterialList from '@/warehouse/page/groupmaterial/materiallist'
+import MaterialTempletList from '@/warehouse/page/groupmaterial/materialtempletlist'
+import MaterialTempletEdit from '@/warehouse/page/groupmaterial/materialtempletedit'
+import DictionarySee from '@/warehouse/page/groupmaterial/dictionarysee'
+import Dictionary from '@/warehouse/page/groupmaterial/dictionary'
+import MaterialManage from '@/warehouse/page/groupmaterial/materialmanage'
+
+// 药理分类
+import PharmacologyList from '@/warehouse/page/group/view/pharmacology/pharmacologylist.vue'
+import AssociationdrugList from '@/warehouse/page/group/view/pharmacology/associationdruglist.vue'
+import FastpharmacologyList from '@/warehouse/page/group/view/pharmacology/fastpharmacologylist.vue'
+
+// 预约排班管理
+import schedulingmain from '@/sob/page/scheduling.management/schedulingmain.vue'
+
+// 医嘱项目  组套
+import ServiceManageList from '@/sob/page/service.manage/list'
+import ServiceManageCreate from '@/sob/page/service.manage/create.form'
+import ServiceManageEdit from '@/sob/page/service.manage/edit.form'
+import Serviceset from '@/sob/page/serviceset.manage/form'
+import ServicesetList from '@/sob/page/serviceset.manage/list'
+
+// 模版公用组件
+import TempDictionary from '@/warehouse/page/groupmaterial/tempdictionary'
+import TempDictionarySee from '@/warehouse/page/groupmaterial/tempdictionarysee'
+import TempDictionaryProperty from '@/warehouse/page/groupmaterial/tempdictionaryproperty'
+
+// 组织管理
+import OrganizationListGroup from '@/warehouse/page/group/view/organization/organizationgroup' // 集团架构
+import OrganizationListCustom from '@/warehouse/page/group/view/organization/organizationcustom' // 自定义架构
+import OrganizationListCross from '@/warehouse/page/group/view/organization/organizationcross' // 跨机构供应关系
+import OrganizationListCrossDetail from '@/warehouse/page/group/view/organization/organizationcrossdetail' // 跨机构供应关系详情
+import OrganizationListCrossOrder from '@/warehouse/page/group/view/organization/organizationcrossorder' // 库房权重设置
+import OrganizationList from '@/warehouse/page/group/view/organization/organizationlist' // 临时备份
+
+// 运营管理
+import Workmain from '@/warehouse/page/group/view/operationsManagement/workmain/main.vue'
+import Numbermain from '@/warehouse/page/group/view/operationsManagement/numberrule/numbermain.vue'
+import Appointment from '@/warehouse/page/group/view/operationsManagement/appointmentrule/appointment.vue'
+import taglist from '@/crm/page/tag/taglist.vue'
+import behaviorList from '@/crm/page/tag/behavior.list.vue'
+import behaviorDetail from '@/crm/page/tag/behavior.detail.vue'
+
+export default [
+  {
+    path: '/group',
+    component: Group,
+    redirect: '/group/welcome',
+    meta: {
+      keepAlive: true
+    },
+    name: 'group',
+    children: [
+      {
+        path: 'welcome',
+        meta: {
+          full: true
+        },
+        component: Welcome
+      },
+      {
+        path: 'organizationsgroup',
+        name: 'organizationsgroup',
+        component: OrganizationListGroup,
+        meta: {
+          keepAlive: true
+        }
+      },
+      {
+        path: 'organizationscustom',
+        name: 'organizationscustom',
+        component: OrganizationListCustom
+      },
+      {
+        path: 'organizationscross',
+        name: 'organizationscross',
+        component: OrganizationListCross
+      },
+      {
+        path: 'organizationscrossadd',
+        name: 'organizationscrossadd',
+        component: OrganizationListCrossDetail,
+        meta: {
+          thirdActiveIndex: '/group/organizationscross'
+        }
+      },
+      {
+        path: 'organizationscrossdetail/:id',
+        name: 'organizationscrossdetail',
+        component: OrganizationListCrossDetail,
+        meta: {
+          thirdActiveIndex: '/group/organizationscross'
+        }
+      },
+      {
+        path: 'organizationscrossorder/:id',
+        name: 'organizationscrossorder',
+        component: OrganizationListCrossOrder,
+        meta: {
+          thirdActiveIndex: '/group/organizationscross'
+        }
+      },
+      {
+        path: 'organizations',
+        name: 'organizations',
+        component: OrganizationList,
+        redirect: '/group/organizations/group',
+        children: [
+          {
+            path: 'group',
+            name: 'organizegroup',
+            component: OrganizationList,
+            meta: {
+              thirdActiveIndex: '/group/organizations'
+            }
+          },
+          {
+            path: 'custom',
+            name: 'organizecustom',
+            component: OrganizationList,
+            meta: {
+              thirdActiveIndex: '/group/organizations'
+            }
+          }
+        ]
+      },
+      {
+        path: 'taglist',
+        name: 'taglist',
+        component: taglist
+      },
+      {
+        path: 'behaviorlist',
+        name: 'behaviorlist',
+        component: behaviorList
+      },
+      {
+        path: 'behaviordetail',
+        name: 'behaviordetail',
+        component: behaviorDetail,
+        meta: {
+          thirdActiveIndex: '/group/behaviorList'
+        }
+      },
+      {
+        path: 'workmain',
+        name: 'workmain',
+        component: Workmain,
+        meta: {
+          thirdActiveIndex: '/group/workmain'
+        }
+      },
+      {
+        path: 'numberrule',
+        name: 'numberrule',
+        component: Numbermain,
+        meta: {
+          thirdActiveIndex: '/group/numberrule'
+        }
+      },
+      {
+        path: 'appointmentrule',
+        name: 'appointmentrule',
+        component: Appointment,
+        meta: {
+          thirdActiveIndex: '/group/appointmentrule'
+        }
+      },
+      {
+        path: 'materials',
+        name: 'materials',
+        component: MaterialList,
+        meta: {
+          keepAlive: true
+        }
+      },
+      {
+        path: 'dictionaryadd',
+        name: 'dictionaryadd',
+        component: Dictionary,
+        meta: {
+          thirdActiveIndex: '/group/materials'
+        }
+      },
+      {
+        path: 'materialadd',
+        name: 'materialadd',
+        component: MaterialManage,
+        meta: {
+          thirdActiveIndex: '/group/materials'
+        }
+      },
+      {
+        path: 'materialdetail/:id',
+        name: 'materialdetail',
+        component: MaterialManage,
+        meta: {
+          thirdActiveIndex: '/group/materials'
+        }
+      },
+      {
+        path: 'dictionary/:id',
+        name: 'dictionary',
+        component: Dictionary,
+        meta: {
+          thirdActiveIndex: '/group/materials'
+        }
+      },
+      {
+        path: 'dictionarysee/:id',
+        name: 'groupdictionarysee',
+        component: DictionarySee,
+        meta: {
+          thirdActiveIndex: '/group/materials'
+        }
+      },
+      {
+        path: 'pharmacologys',
+        name: 'pharmacologys',
+        component: PharmacologyList
+      },
+      {
+        path: 'associationdrugs/:id',
+        name: 'associationdrugs',
+        component: AssociationdrugList,
+        meta: {
+          thirdActiveIndex: '/group/pharmacologys'
+        }
+      },
+      {
+        path: 'fastpharmacologys',
+        name: 'fastpharmacologys',
+        component: FastpharmacologyList,
+        meta: {
+          thirdActiveIndex: '/group/pharmacologys'
+        }
+      },
+      {
+        path: 'fastpharmacologyadd/:id',
+        name: 'fastpharmacologyadd',
+        component: FastpharmacologyList,
+        meta: {
+          thirdActiveIndex: '/group/pharmacologys'
+        }
+      },
+      {
+        path: 'handlebusiness',
+        name: 'handlebusiness',
+        component: HandleBusinessList
+      },
+      {
+        path: 'materialtemplets',
+        name: 'materialtemplets',
+        component: MaterialTempletList
+      },
+      {
+        path: 'materialtempletedit',
+        name: 'materialtempletedit',
+        component: MaterialTempletEdit,
+        meta: {
+          thirdActiveIndex: '/group/materialtemplets'
+        }
+      },
+      {
+        path: 'tempdictionaryproperty/:id',
+        name: 'tempdictionary_property',
+        component: TempDictionaryProperty,
+        meta: {
+          thirdActiveIndex: '/group/materialtemplets'
+        }
+      },
+      {
+        path: 'tempdictionaryadd',
+        name: 'tempdictionary_add',
+        component: TempDictionary,
+        meta: {
+          thirdActiveIndex: '/group/materialtemplets'
+        }
+      },
+      {
+        path: 'tempdictionary/:id',
+        name: 'tempdictionary_id',
+        component: TempDictionary,
+        meta: {
+          thirdActiveIndex: '/group/materialtemplets'
+        }
+      },
+      {
+        path: 'tempdictionarysee/:id',
+        name: 'tempdictionary_see',
+        component: TempDictionarySee,
+        meta: {
+          thirdActiveIndex: '/group/materialtemplets'
+        }
+      },
+      {
+        path: 'mechanismtempdictionaryproperty/:id',
+        name: 'mechanismtempdictionaryproperty',
+        component: TempDictionaryProperty,
+        meta: {
+          thirdActiveIndex: '/group/mechanismtemples'
+        }
+      },
+      {
+        path: 'mechanismtempdictionary/:id',
+        name: 'mechanismtempdictionary',
+        component: TempDictionary,
+        meta: {
+          thirdActiveIndex: '/group/mechanismtemples'
+        }
+      },
+      {
+        path: 'mechanismtempdictionarysee/:id',
+        name: 'mechanismtempdictionarysee',
+        component: TempDictionarySee,
+        meta: {
+          thirdActiveIndex: '/group/mechanismtemples'
+        }
+      },
+      {
+        path: 'departmenttempdictionaryproperty/:id',
+        name: 'departmenttempdictionaryproperty',
+        component: TempDictionaryProperty,
+        meta: {
+          thirdActiveIndex: '/group/departmenttemples'
+        }
+      },
+      {
+        path: 'departmenttempdictionary/:id',
+        name: 'departmenttempdictionary',
+        component: TempDictionary,
+        meta: {
+          thirdActiveIndex: '/group/departmenttemples'
+        }
+      },
+      {
+        path: 'departmenttempdictionarysee/:id',
+        name: 'departmenttempdictionarysee',
+        component: TempDictionarySee,
+        meta: {
+          thirdActiveIndex: '/group/departmenttemples'
+        }
+      },
+      {
+        path: 'sentencetempdictionaryproperty/:id',
+        name: 'sentencetempdictionaryproperty',
+        component: TempDictionaryProperty,
+        meta: {
+          thirdActiveIndex: '/group/sentencetemples'
+        }
+      },
+      {
+        path: 'sentencetempdictionary/:id',
+        name: 'sentencetempdictionary',
+        component: TempDictionary,
+        meta: {
+          thirdActiveIndex: '/group/sentencetemples'
+        }
+      },
+      {
+        path: 'sentencetempdictionarysee/:id',
+        name: 'sentencetempdictionarysee',
+        component: TempDictionarySee,
+        meta: {
+          thirdActiveIndex: '/group/sentencetemples'
+        }
+      },
+      {
+        path: 'personneltempdictionary/:id',
+        name: 'personneltempdictionary',
+        component: TempDictionary,
+        meta: {
+          thirdActiveIndex: '/group/personneltemples'
+        }
+      },
+      {
+        path: 'personneltempdictionaryproperty/:id',
+        name: 'personneltempdictionaryproperty',
+        component: TempDictionaryProperty,
+        meta: {
+          thirdActiveIndex: '/group/personneltemples'
+        }
+      },
+      {
+        path: 'personneltempdictionarysee/:id',
+        name: 'personneltempdictionarysee',
+        component: TempDictionarySee,
+        meta: {
+          thirdActiveIndex: '/group/personneltemples'
+        }
+      },
+      {
+        path: 'buildingtempdictionary/:id',
+        name: 'buildingtempdictionary',
+        component: TempDictionary,
+        meta: {
+          thirdActiveIndex: '/group/buildingtemples'
+        }
+      },
+      {
+        path: 'buildingtempdictionaryproperty/:id',
+        name: 'buildingtempdictionaryproperty',
+        component: TempDictionaryProperty,
+        meta: {
+          thirdActiveIndex: '/group/buildingtemples'
+        }
+      },
+      {
+        path: 'buildingtempdictionarysee/:id',
+        name: 'buildingtempdictionarysee',
+        component: TempDictionarySee,
+        meta: {
+          thirdActiveIndex: '/group/buildingtemples'
+        }
+      },
+      {
+        path: 'roomtempdictionary/:id',
+        name: 'roomtempdictionary',
+        component: TempDictionary,
+        meta: {
+          thirdActiveIndex: '/group/roomtemples'
+        }
+      },
+      {
+        path: 'roomtempdictionaryproperty/:id',
+        name: 'roomtempdictionaryproperty',
+        component: TempDictionaryProperty,
+        meta: {
+          thirdActiveIndex: '/group/roomtemples'
+        }
+      },
+      {
+        path: 'roomtempdictionarysee/:id',
+        name: 'roomtempdictionarysee',
+        component: TempDictionarySee,
+        meta: {
+          thirdActiveIndex: '/group/roomtemples'
+        }
+      },
+      {
+        path: 'bedtempdictionary/:id',
+        name: 'bedtempdictionary',
+        component: TempDictionary,
+        meta: {
+          thirdActiveIndex: '/group/bedtemples'
+        }
+      },
+      {
+        path: 'bedtempdictionaryproperty/:id',
+        name: 'bedtempdictionaryproperty',
+        component: TempDictionaryProperty,
+        meta: {
+          thirdActiveIndex: '/group/bedtemples'
+        }
+      },
+      {
+        path: 'bedtempdictionarysee/:id',
+        name: 'bedtempdictionarysee',
+        component: TempDictionarySee,
+        meta: {
+          thirdActiveIndex: '/group/bedtemples'
+        }
+      },
+      {
+        path: 'areatempdictionary/:id',
+        name: 'areatempdictionary',
+        component: TempDictionary,
+        meta: {
+          thirdActiveIndex: '/group/areatemples'
+        }
+      },
+      {
+        path: 'areatempdictionaryproperty/:id',
+        name: 'areatempdictionaryproperty',
+        component: TempDictionaryProperty,
+        meta: {
+          thirdActiveIndex: '/group/areatemples'
+        }
+      },
+      {
+        path: 'areatempdictionarysee/:id',
+        name: 'areatempdictionarysee',
+        component: TempDictionarySee,
+        meta: {
+          thirdActiveIndex: '/group/areatemples'
+        }
+      },
+      {
+        name: 'servicesManage',
+        path: 'services/:belong',
+        component: ServiceManageList,
+        meta: {
+          active: '/global/services/1',
+          thirdActiveIndex: '/group/services/1'
+        }
+      },
+      {
+        name: 'servicesEdit',
+        path: 'services/:belong/:id',
+        component: ServiceManageEdit,
+        meta: {
+          active: '/global/services/1',
+          thirdActiveIndex: '/group/services/1'
+        }
+      },
+      {
+        name: 'servicesCreate',
+        path: 'serviceadd',
+        component: ServiceManageCreate,
+        meta: {
+          active: '/global/services/1',
+          thirdActiveIndex: '/group/services/1'
+        }
+      },
+      {
+        name: 'servicesetManage',
+        path: 'serviceset/:belong',
+        component: ServicesetList,
+        meta: {
+          active: '/global/serviceset/1',
+          thirdActiveIndex: '/group/serviceset/1'
+        }
+      },
+      {
+        name: 'serviceseCreate',
+        path: 'servicesetadd',
+        component: Serviceset,
+        meta: {
+          active: '/global/serviceset/1',
+          thirdActiveIndex: '/group/serviceset/1'
+        }
+      },
+      {
+        name: 'serviceseEdit',
+        path: 'serviceset/:belong/:id',
+        component: Serviceset,
+        meta: {
+          active: '/global/serviceset/1',
+          thirdActiveIndex: '/group/serviceset/1'
+        }
+      },
+      // 预约排班管理
+      {
+        path: 'prearrange',
+        component: schedulingmain
+      }
+    ]
+  }
+]

@@ -1,0 +1,23 @@
+<!--
+ * @Author: renpengfei
+ * @Date: 2019-08-06 15:21:27
+ * @LastEditors: renpengfei
+ * @LastEditTime: 2019-08-19 11:21:47
+ -->
+
+<template>
+  <div class="layout_box group_wrap flex_layout_full">
+    <keep-alive v-if="$route.meta.keepAlive">
+      <router-view class="station_layout_wrap"></router-view>
+    </keep-alive>
+    <router-view v-if="!$route.meta.keepAlive" class="station_layout_wrap"></router-view>
+  </div>
+</template>
+
+<script>
+import session from '@/util/session'
+import '@/warehouse/page/assets/index.scss'
+export default {
+  mixins: [session]
+}
+</script>
